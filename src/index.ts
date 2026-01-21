@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
+import { initCommand } from "./commands/init";
 import { machineCommand } from "./commands/machine";
 import { newCommand } from "./commands/new";
 import { pushCommand } from "./commands/push";
@@ -21,6 +22,7 @@ const VERSION = packageJson.version;
 
 const commands = {
   new: newCommand,
+  init: initCommand,
   machine: machineCommand,
   sync: syncCommand,
   unsync: unsyncCommand,
@@ -67,6 +69,11 @@ async function main() {
         value: "new",
         label: "Initialize new agent config repo",
         hint: "Set up config sync",
+      },
+      {
+        value: "init",
+        label: "Initialize from existing repo",
+        hint: "Connect to a shared repo",
       },
       {
         value: "sync",
@@ -118,6 +125,7 @@ Usage: syncode [command]
 
 Setup Commands:
   new           Initialize a new agent config repository
+  init          Initialize from an existing agent config repository
 
 Sync Commands:
   sync          Sync agent configs (import or export)
@@ -135,6 +143,7 @@ Other Commands:
 Examples:
   syncode              # Interactive menu
   syncode new          # Initialize new agent config repo
+  syncode init         # Initialize from existing repo
   syncode status       # Show status
   syncode sync         # Sync agent configs
   syncode unsync       # Remove symlinks

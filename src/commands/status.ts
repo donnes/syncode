@@ -17,7 +17,9 @@ export async function statusCommand() {
   try {
     config = getConfig();
   } catch (_error) {
-    p.cancel("Configuration not found. Run 'syncode new' first.");
+    p.cancel(
+      "Configuration not found. Run 'syncode new' or 'syncode init' first.",
+    );
     return;
   }
 

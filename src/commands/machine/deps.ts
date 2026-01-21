@@ -22,7 +22,9 @@ export async function machineDepsCommand() {
     const config = getConfig();
     repoPath = expandHome(config.repoPath);
   } catch (_error) {
-    p.cancel("Configuration not found. Run 'syncode new' first.");
+    p.cancel(
+      "Configuration not found. Run 'syncode new' or 'syncode init' first.",
+    );
     return;
   }
 

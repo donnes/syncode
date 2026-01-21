@@ -221,12 +221,8 @@ export async function newCommand() {
       if (existsSync(template.target)) {
         continue;
       }
-      try {
-        writeFileSync(template.target, template.content, "utf-8");
-        s.message(`Added ${template.label}`);
-      } catch (_error) {
-        s.message(`Warning: Failed to add ${template.label}`);
-      }
+      writeFileSync(template.target, template.content, "utf-8");
+      s.message(`Added ${template.label}`);
     }
 
     for (const agentId of selectedAgents) {
@@ -283,12 +279,13 @@ Managed by [syncode](https://github.com/donnes/syncode)
 # Install syncode
 npm install -g @donnes/syncode
 
-# Clone this repo
-git clone ${remote || "<your-repo-url>"} ~/agent-configs
+# Initialize from existing repo
+syncode init
+# When prompted, enter repo URL: ${remote || "<your-repo-url>"}
 
 # Sync configs (creates symlinks)
-cd ~/agent-configs
 syncode sync
+# Select "Export"
 \`\`\`
 
 ## Synced Agents

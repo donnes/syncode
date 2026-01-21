@@ -1,7 +1,3 @@
-/**
- * Unsync agent configs by removing symlinks
- */
-
 import { copyFileSync, readdirSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import * as p from "@clack/prompts";
@@ -73,12 +69,16 @@ export async function unsyncCommand() {
   try {
     config = getConfig();
   } catch (_error) {
-    p.cancel("Configuration not found. Run 'syncode new' first.");
+    p.cancel(
+      "Configuration not found. Run 'syncode new' or 'syncode init' first.",
+    );
     return;
   }
 
   if (config.agents.length === 0) {
-    p.cancel("No agents configured. Run 'syncode new' to set up agents.");
+    p.cancel(
+      "No agents configured. Run 'syncode new' or 'syncode init' to set up agents.",
+    );
     return;
   }
 

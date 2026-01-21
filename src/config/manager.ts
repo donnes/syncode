@@ -42,7 +42,7 @@ function ensureConfigDir(): void {
 export function getConfig(): GlobalConfig {
   if (!configExists()) {
     throw new Error(
-      `Configuration not found at ${CONFIG_FILE}. Run 'syncode new' to set up.`,
+      `Configuration not found at ${CONFIG_FILE}. Run 'syncode new' or 'syncode init' to set up.`,
     );
   }
 

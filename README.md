@@ -31,6 +31,12 @@ The era of AI-powered coding is here, but managing multiple AI assistants is a m
 npx @donnes/syncode new
 ```
 
+### Already Have a Repo?
+
+```bash
+syncode init
+```
+
 ### Option 2: Global Install
 
 ```bash
@@ -46,7 +52,7 @@ syncode new
 
 ## Usage
 
-### Initialize CLI
+### Initialize a New Repo
 
 ```bash
 syncode new
@@ -58,6 +64,18 @@ This will:
 - Create a git repository for your configs
 - Import your existing configs
 - Set up smart sync defaults (symlinks for most, copy for Claude, Gemini, etc.)
+
+### Initialize from an Existing Repo
+
+```bash
+syncode init
+```
+
+This will:
+- Prompt for the repo URL and local storage path
+- Clone the repo if needed
+- Let you choose which agents to sync
+- Save configuration to `~/.syncode/config.json`
 
 ### Sync Agents Config
 
@@ -212,6 +230,7 @@ syncode push
 ## Commands
 
 - `syncode new` - Initialize a new agent config repository
+- `syncode init` - Initialize from an existing agent config repository
 - `syncode sync` - Sync agent configs (import or export)
 - `syncode status` - Show status of synced agents
 - `syncode push` - Push config changes to git remote
@@ -273,6 +292,8 @@ bun run build
 ```bash
 # Run initialization
 syncode new
+# Or connect to an existing repo
+syncode init
 ```
 
 ### Symlinks not working
@@ -304,4 +325,3 @@ MIT © Donald Silveira
 ---
 
 **Made with ❤️ for developers**
-

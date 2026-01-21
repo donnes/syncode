@@ -33,6 +33,14 @@
   - Imports existing configurations from system paths to the repository.
   - Persists global settings in `~/.syncode/config.json`.
 
+### `syncode init`
+- Purpose: Initializes syncode from an existing configuration repository.
+- Actions:
+  - Prompts for the repo URL and local repository path.
+  - Clones the repo if it does not exist locally.
+  - Prompts for which agents to sync (preselects agents found in the repo).
+  - Persists global settings in `~/.syncode/config.json`.
+
 ### `syncode sync`
 - Purpose: Synchronizes agent configurations between the system and the repository.
 - Modes:
