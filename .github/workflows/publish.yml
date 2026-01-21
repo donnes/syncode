@@ -1,4 +1,4 @@
-name: publish
+name: Release & Publish 
 run-name: "release ${{ inputs.bump }}"
 
 on:
