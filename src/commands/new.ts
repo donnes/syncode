@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 import { adapterRegistry } from "../adapters/registry";
@@ -11,6 +11,11 @@ import {
 } from "../agents";
 import { configExists, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
+import {
+  BREWFILE_TEMPLATE,
+  PACKAGES_ARCH_TEMPLATE,
+  PACKAGES_DEBIAN_TEMPLATE,
+} from "../templates";
 import { contractHome, expandHome } from "../utils/paths";
 
 export async function newCommand() {
@@ -31,8 +36,8 @@ export async function newCommand() {
 
   const repoPathInput = await p.text({
     message: "Where should the agent configs be stored?",
-    placeholder: "~/.syncode/configs",
-    initialValue: "~/.syncode/configs",
+    placeholder: "~/.syncode/repo",
+    initialValue: "~/.syncode/repo",
     validate: (value) => {
       if (!value) return "Repository path is required";
       return undefined;
@@ -194,6 +199,36 @@ export async function newCommand() {
     const configsDir = join(repoPath, "configs");
     mkdirSync(configsDir, { recursive: true });
 
+    const templateFiles = [
+      {
+        label: "Brewfile",
+        target: join(repoPath, "Brewfile"),
+        content: BREWFILE_TEMPLATE,
+      },
+      {
+        label: "packages-arch.txt",
+        target: join(repoPath, "packages-arch.txt"),
+        content: PACKAGES_ARCH_TEMPLATE,
+      },
+      {
+        label: "packages-debian.txt",
+        target: join(repoPath, "packages-debian.txt"),
+        content: PACKAGES_DEBIAN_TEMPLATE,
+      },
+    ];
+
+    for (const template of templateFiles) {
+      if (existsSync(template.target)) {
+        continue;
+      }
+      try {
+        writeFileSync(template.target, template.content, "utf-8");
+        s.message(`Added ${template.label}`);
+      } catch (_error) {
+        s.message(`Warning: Failed to add ${template.label}`);
+      }
+    }
+
     for (const agentId of selectedAgents) {
       const adapter = adapterRegistry.get(agentId);
       if (!adapter) {
@@ -236,7 +271,6 @@ export async function newCommand() {
 # Node modules (if any configs have dependencies)
 node_modules/
 `;
-    const { writeFileSync } = require("node:fs");
     writeFileSync(join(repoPath, ".gitignore"), gitignoreContent);
 
     const readmeContent = `# Agent Config Repository

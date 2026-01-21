@@ -8,6 +8,7 @@ import { exists } from "../utils/fs";
 import { getGitStatus, hasChanges } from "../utils/git";
 import { contractHome, expandHome } from "../utils/paths";
 import { getPlatformName } from "../utils/platform";
+import { machineStatusCommand } from "./machine/status";
 
 export async function statusCommand() {
   p.intro("Agent Config Status");
@@ -117,6 +118,17 @@ export async function statusCommand() {
     }
   } else {
     p.log.success("Git: Clean");
+  }
+
+  const runMachineStatus = await p.confirm({
+    message: "Run full machine status?",
+    initialValue: false,
+  });
+
+  if (!p.isCancel(runMachineStatus) && runMachineStatus) {
+    console.log("");
+    await machineStatusCommand({ skipIntro: true });
+    return;
   }
 
   p.outro("Done");

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
+import { machineCommand } from "./commands/machine";
 import { newCommand } from "./commands/new";
 import { pushCommand } from "./commands/push";
 import { statusCommand } from "./commands/status";
@@ -20,6 +21,7 @@ const VERSION = packageJson.version;
 
 const commands = {
   new: newCommand,
+  machine: machineCommand,
   sync: syncCommand,
   unsync: unsyncCommand,
   status: statusCommand,
@@ -72,6 +74,11 @@ async function main() {
         hint: "Import or export agent configs",
       },
       {
+        value: "machine",
+        label: "Machine setup",
+        hint: "Dependencies and setup status",
+      },
+      {
         value: "unsync",
         label: "Remove symlinks",
         hint: "Copy configs back to this machine",
@@ -118,6 +125,9 @@ Sync Commands:
   status        Show status of synced agents
   push          Push config changes to git remote
 
+Machine Commands:
+  machine       Machine setup tools (deps, status)
+
 Other Commands:
   --version     Show version
   help          Show this help message
@@ -129,6 +139,7 @@ Examples:
   syncode sync         # Sync agent configs
   syncode unsync       # Remove symlinks
   syncode push         # Push changes to remote
+  syncode machine      # Machine setup tools
 
 Quick Start:
   npx @donnes/syncode new    # Quick setup with npx

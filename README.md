@@ -20,6 +20,7 @@ The era of AI-powered coding is here, but managing multiple AI assistants is a m
 - 🔗 **Symlinks & Copy** - Symlinks for live sync, copy for Claude (preserves cache)
 - 📦 **Version Control** - Git-based workflow for your AI configurations
 - 🛡️ **Safe Operations** - Automatic backups before any changes
+- 🖥️ **Machine Setup** - Opinionated development dependencies for macOS/Linux
 - 🌍 **Cross-Platform** - macOS, Linux (Windows coming soon)
 
 ## Quick Start
@@ -45,7 +46,7 @@ syncode new
 
 ## Usage
 
-### Initialize New Agent Config Repo
+### Initialize CLI
 
 ```bash
 syncode new
@@ -58,7 +59,7 @@ This will:
 - Import your existing configs
 - Set up smart sync defaults (symlinks for most, copy for Claude, Gemini, etc.)
 
-### Sync Agent Configs
+### Sync Agents Config
 
 ```bash
 syncode sync
@@ -78,6 +79,33 @@ Shows:
 - Which agents are synced
 - Sync method (symlink vs copy)
 - Git status
+- Option to run full machine status
+
+### Machine Dependencies
+
+```bash
+syncode machine deps
+```
+
+Install opinionated development dependencies for your machine:
+- **macOS**: Homebrew packages from `Brewfile`
+- **Arch/Omarchy**: Pacman/yay packages from `packages-arch.txt`
+- **Debian/Ubuntu**: APT packages from `packages-debian.txt`
+- **Universal**: Bun runtime and latest Node.js via fnm
+
+These are boilerplate files that get copied to your repo root during `syncode new`. Edit them to customize the packages for your workflow.
+
+### Machine Status
+
+```bash
+syncode machine status
+```
+
+Shows comprehensive machine setup status:
+- Platform and package manager detection
+- Repository and git status
+- Dependency file presence
+- Quick health check for your development environment
 
 ### Push to Remote
 
@@ -119,8 +147,8 @@ Global configuration is stored at `~/.syncode/config.json`:
 ```json
 {
   "version": "1.0.0",
-  "repoPath": "~/agent-configs",
-  "remote": "git@github.com:username/agent-configs.git",
+  "repoPath": "~/.syncode/repo",
+  "remote": "https://github.com/<username>/configs.git",
   "agents": ["opencode", "claude", "cursor", "windsurf"],
   "features": {
     "autoSync": false,
@@ -133,9 +161,12 @@ Global configuration is stored at `~/.syncode/config.json`:
 ## Repository Structure
 
 ```
-~/agent-configs/
+~/.syncode/repo/
 ├── .git/
 ├── .gitignore
+├── Brewfile
+├── packages-arch.txt
+├── packages-debian.txt
 ├── README.md
 └── configs/
     ├── amp/               # Symlinked
@@ -178,29 +209,14 @@ syncode sync
 syncode push
 ```
 
-### New Machine Setup
-
-```bash
-# Install syncode
-npm install -g @donnes/syncode
-
-# Clone your agent config repo
-git clone https://github.com/username/agent-configs.git ~/agent-configs
-
-# Sync configs (creates symlinks)
-cd ~/agent-configs
-syncode sync
-# Select "Export"
-
-# You're ready - all AI agents configured identically!
-```
-
 ## Commands
 
 - `syncode new` - Initialize a new agent config repository
 - `syncode sync` - Sync agent configs (import or export)
 - `syncode status` - Show status of synced agents
 - `syncode push` - Push config changes to git remote
+- `syncode machine deps` - Install machine dependencies (brew/apt packages, bun, node)
+- `syncode machine status` - Show full machine setup status
 - `syncode --version` - Show version
 - `syncode help` - Show help message
 
