@@ -1,7 +1,7 @@
 {
   "name": "@donnes/syncode",
   "version": "1.0.0",
-  "description": "Agent Configuration Manager - Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
+  "description": "Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
   "private": false,
   "type": "module",
   "bin": {
