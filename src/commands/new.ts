@@ -31,8 +31,8 @@ export async function newCommand() {
 
   const repoPathInput = await p.text({
     message: "Where should the agent configs be stored?",
-    placeholder: "~/agent-configs",
-    initialValue: "~/agent-configs",
+    placeholder: "~/.syncode/configs",
+    initialValue: "~/.syncode/configs",
     validate: (value) => {
       if (!value) return "Repository path is required";
       return undefined;
@@ -81,7 +81,7 @@ export async function newCommand() {
   if (isNewRepo) {
     const remoteInput = await p.text({
       message: "Add GitHub remote? (optional, press Enter to skip)",
-      placeholder: "git@github.com:username/agent-configs.git",
+      placeholder: "https://github.com/<username>/configs.git",
     });
 
     if (p.isCancel(remoteInput)) {
