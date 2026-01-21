@@ -1,13 +1,13 @@
 import * as p from "@clack/prompts";
-import { getConfig } from "../config/manager";
-import { getPlatformName } from "../utils/platform";
-import { contractHome, expandHome } from "../utils/paths";
-import { hasChanges, getGitStatus } from "../utils/git";
 import { adapterRegistry } from "../adapters/registry";
-import { exists } from "../utils/fs";
-import { getAgentMetadata, isAgentInstalled } from "../agents";
 import type { Platform } from "../adapters/types";
+import { getAgentMetadata, isAgentInstalled } from "../agents";
+import { getConfig } from "../config/manager";
 import type { GlobalConfig } from "../config/types";
+import { exists } from "../utils/fs";
+import { getGitStatus, hasChanges } from "../utils/git";
+import { contractHome, expandHome } from "../utils/paths";
+import { getPlatformName } from "../utils/platform";
 
 export async function statusCommand() {
   p.intro("Agent Config Status");
@@ -15,7 +15,7 @@ export async function statusCommand() {
   let config: GlobalConfig;
   try {
     config = getConfig();
-  } catch (error) {
+  } catch (_error) {
     p.cancel("Configuration not found. Run 'syncode new' first.");
     return;
   }
@@ -56,7 +56,9 @@ export async function statusCommand() {
         const installed = isAgentInstalled(agentId, platform);
         const icon = installed ? "📋" : "○";
         const statusText = installed ? "detected" : "not found";
-        statusLines.push(`${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} (metadata only)`);
+        statusLines.push(
+          `${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} (metadata only)`,
+        );
         continue;
       }
 
@@ -74,11 +76,13 @@ export async function statusCommand() {
       if (isLinked) {
         icon = "🔗";
         statusText = "linked";
-        syncMethod = adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
+        syncMethod =
+          adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
       } else if (existsInRepo && existsOnSystem) {
         icon = "✓";
         statusText = "synced";
-        syncMethod = adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
+        syncMethod =
+          adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
       } else if (existsInRepo && !existsOnSystem) {
         icon = "📦";
         statusText = "in repo only";
@@ -90,7 +94,9 @@ export async function statusCommand() {
         statusText = "not found";
       }
 
-      statusLines.push(`${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} ${syncMethod}`);
+      statusLines.push(
+        `${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} ${syncMethod}`,
+      );
     }
 
     p.log.message(statusLines.join("\n"));
@@ -102,7 +108,12 @@ export async function statusCommand() {
     p.log.warning("Git: Uncommitted changes");
     const gitStatus = await getGitStatus();
     if (gitStatus) {
-      console.log(gitStatus.split("\n").map((line) => `   ${line}`).join("\n"));
+      console.log(
+        gitStatus
+          .split("\n")
+          .map((line) => `   ${line}`)
+          .join("\n"),
+      );
     }
   } else {
     p.log.success("Git: Clean");

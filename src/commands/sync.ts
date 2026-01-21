@@ -3,9 +3,9 @@
  */
 
 import * as p from "@clack/prompts";
-import { getConfig } from "../config/manager";
 import { adapterRegistry } from "../adapters/registry";
 import type { Platform } from "../adapters/types";
+import { getConfig } from "../config/manager";
 import type { GlobalConfig } from "../config/types";
 
 export async function syncCommand() {
@@ -15,7 +15,7 @@ export async function syncCommand() {
   let config: GlobalConfig;
   try {
     config = getConfig();
-  } catch (error) {
+  } catch (_error) {
     p.cancel("Configuration not found. Run 'syncode new' first.");
     return;
   }
@@ -49,7 +49,9 @@ export async function syncCommand() {
 
   // Perform sync
   const s = p.spinner();
-  s.start(`${direction === "import" ? "Importing" : "Exporting"} agent configs`);
+  s.start(
+    `${direction === "import" ? "Importing" : "Exporting"} agent configs`,
+  );
 
   const platform: Platform =
     process.platform === "darwin"
@@ -106,6 +108,6 @@ export async function syncCommand() {
   p.outro(
     direction === "import"
       ? "Configs imported to repository. Commit and push to sync across machines."
-      : "Configs exported to system. Your agents are now synced!"
+      : "Configs exported to system. Your agents are now synced!",
   );
 }

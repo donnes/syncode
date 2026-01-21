@@ -2,23 +2,23 @@
  * Trae adapter
  */
 
-import { join } from "path";
-import type {
-  AgentAdapter,
-  Platform,
-  ImportResult,
-  ExportResult,
-} from "./types";
+import { unlinkSync } from "node:fs";
+import { join } from "node:path";
 import {
-  exists,
   copyDir,
-  ensureDir,
   createSymlink,
+  ensureDir,
+  exists,
   isSymlink,
   removeDir,
 } from "../utils/fs";
-import { unlinkSync } from "fs";
 import { contractHome } from "../utils/paths";
+import type {
+  AgentAdapter,
+  ExportResult,
+  ImportResult,
+  Platform,
+} from "./types";
 
 export class TraeAdapter implements AgentAdapter {
   readonly id = "trae";
@@ -29,7 +29,7 @@ export class TraeAdapter implements AgentAdapter {
     export: "symlink" as const,
   };
 
-  getConfigPath(platform: Platform): string {
+  getConfigPath(_platform: Platform): string {
     return join(process.env.HOME || "", ".trae");
   }
 
@@ -42,7 +42,12 @@ export class TraeAdapter implements AgentAdapter {
   }
 
   detect(): boolean {
-    const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+    const platform =
+      process.platform === "darwin"
+        ? "macos"
+        : process.platform === "win32"
+          ? "windows"
+          : "linux";
     return this.isInstalled(platform);
   }
 
@@ -87,9 +92,9 @@ export class TraeAdapter implements AgentAdapter {
             unlinkSync(backupPath);
           } else {
             removeDir(backupPath);
-          };
+          }
         }
-        require("fs").renameSync(systemPath, backupPath);
+        require("node:fs").renameSync(systemPath, backupPath);
       }
     }
 

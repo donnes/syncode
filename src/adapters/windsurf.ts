@@ -2,32 +2,32 @@
  * Windsurf adapter
  */
 
-import { join, dirname } from "path";
 import {
-  existsSync,
-  statSync,
   copyFileSync,
+  existsSync,
   renameSync,
-  unlinkSync,
+  statSync,
   symlinkSync,
-} from "fs";
-import type {
-  AgentAdapter,
-  Platform,
-  ImportResult,
-  ExportResult,
-  CanonicalSkill,
-} from "./types";
+  unlinkSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 import {
-  exists,
-  isSymlink,
-  getSymlinkTarget,
   copyDir,
   ensureDir,
+  exists,
+  getSymlinkTarget,
   isDirectory,
+  isSymlink,
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import type {
+  AgentAdapter,
+  CanonicalSkill,
+  ExportResult,
+  ImportResult,
+  Platform,
+} from "./types";
 
 export class WindsurfAdapter implements AgentAdapter {
   readonly id = "windsurf";
@@ -45,7 +45,7 @@ export class WindsurfAdapter implements AgentAdapter {
     "rules", // .windsurf/rules/ directory
   ];
 
-  getConfigPath(platform: Platform): string {
+  getConfigPath(_platform: Platform): string {
     // Windsurf uses ~/.codeium/windsurf on all platforms
     return join(process.env.HOME || "", ".codeium", "windsurf");
   }
@@ -67,7 +67,12 @@ export class WindsurfAdapter implements AgentAdapter {
    * Detect if Windsurf is installed on the current system
    */
   detect(): boolean {
-    const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+    const platform =
+      process.platform === "darwin"
+        ? "macos"
+        : process.platform === "win32"
+          ? "windows"
+          : "linux";
     return this.isInstalled(platform);
   }
 

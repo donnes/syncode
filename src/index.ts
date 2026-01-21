@@ -1,22 +1,19 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
-import { syncCommand } from "./commands/sync";
-import { statusCommand } from "./commands/status";
 import { newCommand } from "./commands/new";
 import { pushCommand } from "./commands/push";
-import { readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { statusCommand } from "./commands/status";
+import { syncCommand } from "./commands/sync";
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageJson = JSON.parse(
-  readFileSync(
-    join(dirname(__dirname), "package.json"),
-    "utf-8"
-  )
+  readFileSync(join(dirname(__dirname), "package.json"), "utf-8"),
 );
 const VERSION = packageJson.version;
 

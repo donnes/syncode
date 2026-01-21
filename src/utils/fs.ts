@@ -1,17 +1,17 @@
 import {
+  copyFileSync,
   existsSync,
   lstatSync,
-  readlinkSync,
   mkdirSync,
-  copyFileSync,
-  unlinkSync,
-  symlinkSync,
   readdirSync,
-  statSync,
-  renameSync,
   readFileSync,
-} from "fs";
-import { join, dirname, relative } from "path";
+  readlinkSync,
+  renameSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 import { REPO_ROOT } from "./paths";
 
 export function exists(path: string): boolean {
@@ -61,12 +61,12 @@ export function ensureParentDir(filePath: string): void {
 export function backup(path: string): string | null {
   if (!existsSync(path)) return null;
   const backupPath = `${path}.backup`;
-  
+
   // If it's a symlink, we just need to remove it (no backup needed)
   if (isSymlink(path)) {
     return null;
   }
-  
+
   // If backup already exists, remove it
   if (existsSync(backupPath)) {
     if (isDirectory(backupPath)) {
@@ -75,7 +75,7 @@ export function backup(path: string): string | null {
       unlinkSync(backupPath);
     }
   }
-  
+
   renameSync(path, backupPath);
   return backupPath;
 }
@@ -88,11 +88,11 @@ export function copyFile(src: string, dest: string): void {
 export function copyDir(src: string, dest: string): void {
   ensureDir(dest);
   const entries = readdirSync(src, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const srcPath = join(src, entry.name);
     const destPath = join(dest, entry.name);
-    
+
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
@@ -103,7 +103,7 @@ export function copyDir(src: string, dest: string): void {
 
 export function removeDir(path: string): void {
   if (!existsSync(path)) return;
-  
+
   const entries = readdirSync(path, { withFileTypes: true });
   for (const entry of entries) {
     const entryPath = join(path, entry.name);
@@ -113,24 +113,27 @@ export function removeDir(path: string): void {
       unlinkSync(entryPath);
     }
   }
-  
+
   // Remove the directory itself
-  const { rmdirSync } = require("fs");
+  const { rmdirSync } = require("node:fs");
   rmdirSync(path);
 }
 
 export function createSymlink(target: string, linkPath: string): void {
   ensureParentDir(linkPath);
-  
+
   // Remove existing file/symlink
   if (existsSync(linkPath) || isSymlink(linkPath)) {
     unlinkSync(linkPath);
   }
-  
+
   symlinkSync(target, linkPath);
 }
 
-export function createSymlinkWithBackup(target: string, linkPath: string): string | null {
+export function createSymlinkWithBackup(
+  target: string,
+  linkPath: string,
+): string | null {
   const backupPath = backup(linkPath);
   createSymlink(target, linkPath);
   return backupPath;
@@ -147,57 +150,64 @@ export function readFile(path: string): string | null {
 export function getFileDiff(file1: string, file2: string): boolean {
   const content1 = readFile(file1);
   const content2 = readFile(file2);
-  
+
   if (content1 === null || content2 === null) {
     return content1 !== content2;
   }
-  
+
   return content1 !== content2;
 }
 
-export function getAllSymlinksToRepo(): Array<{ linkPath: string; target: string }> {
+export function getAllSymlinksToRepo(): Array<{
+  linkPath: string;
+  target: string;
+}> {
   const symlinks: Array<{ linkPath: string; target: string }> = [];
-  
+
   const checkPath = (path: string) => {
     if (isSymlink(path)) {
       const target = getSymlinkTarget(path);
-      if (target && target.startsWith(REPO_ROOT)) {
+      if (target?.startsWith(REPO_ROOT)) {
         symlinks.push({ linkPath: path, target });
       }
     }
   };
-  
+
   // Check common config locations
   const { systemPaths } = require("./paths");
-  
+
   checkPath(systemPaths.zshrc);
   checkPath(systemPaths.bashrc);
   checkPath(systemPaths.ssh);
   checkPath(systemPaths.ghostty);
-  
+
   // Check if opencode is symlinked
   if (isSymlink(systemPaths.opencode)) {
     const target = getSymlinkTarget(systemPaths.opencode);
-    if (target && target.startsWith(REPO_ROOT)) {
+    if (target?.startsWith(REPO_ROOT)) {
       symlinks.push({ linkPath: systemPaths.opencode, target });
     }
   }
-  
+
   // Check if claude is symlinked
   if (isSymlink(systemPaths.claude)) {
     const target = getSymlinkTarget(systemPaths.claude);
-    if (target && target.startsWith(REPO_ROOT)) {
+    if (target?.startsWith(REPO_ROOT)) {
       symlinks.push({ linkPath: systemPaths.claude, target });
     }
   }
-  
+
   return symlinks;
 }
 
-export function updateSymlinkTarget(linkPath: string, oldRepoRoot: string, newRepoRoot: string): void {
+export function updateSymlinkTarget(
+  linkPath: string,
+  oldRepoRoot: string,
+  newRepoRoot: string,
+): void {
   const currentTarget = getSymlinkTarget(linkPath);
   if (!currentTarget) return;
-  
+
   const newTarget = currentTarget.replace(oldRepoRoot, newRepoRoot);
   createSymlink(newTarget, linkPath);
 }

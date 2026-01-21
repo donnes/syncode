@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "node:fs";
 
 export const isMacOS = process.platform === "darwin";
 export const isLinux = process.platform === "linux";
@@ -7,9 +7,7 @@ export function isArch(): boolean {
   if (!isLinux) return false;
   try {
     const osRelease = readFileSync("/etc/os-release", "utf-8");
-    return (
-      osRelease.includes("Arch Linux") || osRelease.includes("ID=arch")
-    );
+    return osRelease.includes("Arch Linux") || osRelease.includes("ID=arch");
   } catch {
     return false;
   }
@@ -17,7 +15,8 @@ export function isArch(): boolean {
 
 export function getPackageManager(): "brew" | "yay" | "pacman" | null {
   if (isMacOS) {
-    return existsSync("/opt/homebrew/bin/brew") || existsSync("/usr/local/bin/brew")
+    return existsSync("/opt/homebrew/bin/brew") ||
+      existsSync("/usr/local/bin/brew")
       ? "brew"
       : null;
   }

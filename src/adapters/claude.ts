@@ -2,28 +2,23 @@
  * Claude Code adapter
  */
 
-import { join, dirname } from "path";
+import { copyFileSync, existsSync, statSync, unlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 import {
-  existsSync,
-  statSync,
-  copyFileSync,
-  unlinkSync,
-} from "fs";
-import type {
-  AgentAdapter,
-  Platform,
-  ImportResult,
-  ExportResult,
-  CanonicalSkill,
-} from "./types";
-import {
-  exists,
   copyDir,
   ensureDir,
+  exists,
   isDirectory,
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import type {
+  AgentAdapter,
+  CanonicalSkill,
+  ExportResult,
+  ImportResult,
+  Platform,
+} from "./types";
 
 export class ClaudeAdapter implements AgentAdapter {
   readonly id = "claude";
@@ -60,7 +55,12 @@ export class ClaudeAdapter implements AgentAdapter {
    * Detect if Claude Code is installed on the current system
    */
   detect(): boolean {
-    const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+    const platform =
+      process.platform === "darwin"
+        ? "macos"
+        : process.platform === "win32"
+          ? "windows"
+          : "linux";
     return this.isInstalled(platform);
   }
 

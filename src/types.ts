@@ -4,22 +4,22 @@ export interface ConfigHandler {
   systemPath: string | string[];
   repoPath: string | string[];
   isDirectory: boolean;
-  
+
   // Check if config exists on system
   existsOnSystem(): boolean;
-  
+
   // Check if config exists in repo
   existsInRepo(): boolean;
-  
+
   // Check if system config is symlinked to repo
   isLinked(): boolean;
-  
+
   // Import from system to repo
   import(): Promise<ImportResult>;
-  
+
   // Export from repo to system (create symlink)
   export(): Promise<ExportResult>;
-  
+
   // Get status/diff info
   getStatus(): ConfigStatus;
 }
@@ -52,7 +52,7 @@ export interface SyncOptions {
   dryRun?: boolean;
 }
 
-export type ConfigName = 
+export type ConfigName =
   | "dotfiles"
   | "opencode"
   | "claude"

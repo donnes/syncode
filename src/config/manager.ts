@@ -2,16 +2,16 @@
  * Configuration manager for ~/.syncode/config.json
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
-import { homedir } from "os";
-import {
-  GlobalConfig,
-  DEFAULT_CONFIG,
-  ConfigValidationResult,
-  ConfigValidationError,
-} from "./types";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { expandHome } from "../utils/paths";
+import {
+  type ConfigValidationError,
+  type ConfigValidationResult,
+  DEFAULT_CONFIG,
+  type GlobalConfig,
+} from "./types";
 
 /** Path to global config directory */
 export const CONFIG_DIR = join(homedir(), ".syncode");
@@ -42,7 +42,7 @@ function ensureConfigDir(): void {
 export function getConfig(): GlobalConfig {
   if (!configExists()) {
     throw new Error(
-      `Configuration not found at ${CONFIG_FILE}. Run 'syncode new' to set up.`
+      `Configuration not found at ${CONFIG_FILE}. Run 'syncode new' to set up.`,
     );
   }
 
@@ -52,7 +52,7 @@ export function getConfig(): GlobalConfig {
     return config;
   } catch (error) {
     throw new Error(
-      `Failed to read configuration from ${CONFIG_FILE}: ${error}`
+      `Failed to read configuration from ${CONFIG_FILE}: ${error}`,
     );
   }
 }
@@ -87,9 +87,7 @@ export function setConfig(config: GlobalConfig): void {
 /**
  * Update specific config fields
  */
-export function updateConfig(
-  updates: Partial<GlobalConfig>
-): void {
+export function updateConfig(updates: Partial<GlobalConfig>): void {
   const config = getConfig();
   const updated = { ...config, ...updates };
   setConfig(updated);

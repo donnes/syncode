@@ -1,13 +1,17 @@
+import { execSync } from "node:child_process";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import * as p from "@clack/prompts";
-import { existsSync, mkdirSync } from "fs";
-import { join } from "path";
-import { execSync } from "child_process";
-import { initConfig, configExists } from "../config/manager";
-import { expandHome, contractHome } from "../utils/paths";
-import { SUPPORTED_AGENTS } from "../config/types";
 import { adapterRegistry } from "../adapters/registry";
-import { detectInstalledAgents, getAgentMetadata, getAgentsWithAdapters } from "../agents";
 import type { Platform } from "../adapters/types";
+import {
+  detectInstalledAgents,
+  getAgentMetadata,
+  getAgentsWithAdapters,
+} from "../agents";
+import { configExists, initConfig } from "../config/manager";
+import { SUPPORTED_AGENTS } from "../config/types";
+import { contractHome, expandHome } from "../utils/paths";
 
 export async function newCommand() {
   p.intro("Initialize Agent Config Repository");
@@ -68,7 +72,7 @@ export async function newCommand() {
       execSync("git init", { cwd: repoPath, stdio: "pipe" });
       isNewRepo = true;
       p.log.success("✓ Initialized git repository");
-    } catch (error) {
+    } catch (_error) {
       p.log.warn("Failed to initialize git repository");
     }
   }
@@ -93,7 +97,7 @@ export async function newCommand() {
           stdio: "pipe",
         });
         p.log.success(`✓ Added remote: ${remote}`);
-      } catch (error) {
+      } catch (_error) {
         p.log.warn("Failed to add remote (you can add it later)");
       }
     }
@@ -112,10 +116,15 @@ export async function newCommand() {
     const detected = detectedAgents.includes(id);
     const hasAdapter = agentsWithAdapters.includes(id);
     const metadata = getAgentMetadata(id);
-    const label = metadata?.displayName || id.charAt(0).toUpperCase() + id.slice(1);
+    const label =
+      metadata?.displayName || id.charAt(0).toUpperCase() + id.slice(1);
     const hint = detected
-      ? (hasAdapter ? "Installed • Full sync" : "Installed • Metadata only")
-      : (hasAdapter ? "Not found • Full sync available" : "Not found");
+      ? hasAdapter
+        ? "Installed • Full sync"
+        : "Installed • Metadata only"
+      : hasAdapter
+        ? "Not found • Full sync available"
+        : "Not found";
 
     return {
       value: id,
@@ -139,18 +148,24 @@ export async function newCommand() {
   const selectedAgents = agentsInput as string[];
 
   if (selectedAgents.length === 0) {
-    p.log.warn("No agents selected. You can add them later by editing ~/.syncode/config.json");
+    p.log.warn(
+      "No agents selected. You can add them later by editing ~/.syncode/config.json",
+    );
   }
 
   if (selectedAgents.length > 0) {
-    const selectedWithAdapters = selectedAgents.filter((id) => agentsWithAdapters.includes(id));
+    const selectedWithAdapters = selectedAgents.filter((id) =>
+      agentsWithAdapters.includes(id),
+    );
     const selectedWithoutAdapters = selectedAgents.filter(
-      (id) => !agentsWithAdapters.includes(id)
+      (id) => !agentsWithAdapters.includes(id),
     );
 
     if (selectedWithAdapters.length > 0) {
       p.log.info("Using smart sync defaults:");
-      p.log.info("  • Symlinks: Cursor, OpenCode, Windsurf, VSCode (live sync)");
+      p.log.info(
+        "  • Symlinks: Cursor, OpenCode, Windsurf, VSCode (live sync)",
+      );
       p.log.info("  • Copy: Claude Code (preserves cache/history)");
     }
 
@@ -197,7 +212,7 @@ export async function newCommand() {
         if (result.success) {
           s.message(`Imported ${adapter.name} configs`);
         }
-      } catch (error) {
+      } catch (_error) {
         s.message(`Warning: Failed to import ${adapter.name} configs`);
       }
     }
@@ -221,7 +236,7 @@ export async function newCommand() {
 # Node modules (if any configs have dependencies)
 node_modules/
 `;
-    const { writeFileSync } = require("fs");
+    const { writeFileSync } = require("node:fs");
     writeFileSync(join(repoPath, ".gitignore"), gitignoreContent);
 
     const readmeContent = `# Agent Config Repository
@@ -244,12 +259,14 @@ syncode sync
 
 ## Synced Agents
 
-${selectedAgents.map((id) => {
-  const adapter = adapterRegistry.get(id);
-  const name = adapter ? adapter.name : id;
-  const strategy = adapter?.syncStrategy.export || "symlink";
-  return `- **${name}** (${strategy})`;
-}).join("\n")}
+${selectedAgents
+  .map((id) => {
+    const adapter = adapterRegistry.get(id);
+    const name = adapter ? adapter.name : id;
+    const strategy = adapter?.syncStrategy.export || "symlink";
+    return `- **${name}** (${strategy})`;
+  })
+  .join("\n")}
 
 ${includeDotfiles ? "\n## Dotfiles\n\n- Shell configs (.zshrc, .bashrc)\n- Terminal configs (ghostty, tmux)" : ""}
 
@@ -287,7 +304,7 @@ git push
   }
 
   try {
-    const config = initConfig({
+    const _config = initConfig({
       repoPath: repoPathInput, // Store as entered (with ~ if used)
       remote,
       agents: selectedAgents,
@@ -315,7 +332,7 @@ Next steps:
   • Edit configs in ${contractHome(repoPath)}/configs/
   • Changes are synced automatically via symlinks
   • Run 'syncode sync' to apply changes to your system
-  ${remote ? `• Push to GitHub: cd ${contractHome(repoPath)} && git push -u origin main` : ""}`
+  ${remote ? `• Push to GitHub: cd ${contractHome(repoPath)} && git push -u origin main` : ""}`,
     );
   } catch (error) {
     p.cancel(`Failed to create configuration: ${error}`);

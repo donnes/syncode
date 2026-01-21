@@ -1,6 +1,6 @@
-import { homedir } from "os";
-import { join, resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isMacOS } from "./platform";
 
 // Home directory
@@ -52,7 +52,13 @@ export const systemPaths = {
   opencode: join(HOME, ".config", "opencode"),
   claude: join(HOME, ".claude"),
   ghostty: isMacOS
-    ? join(HOME, "Library", "Application Support", "com.mitchellh.ghostty", "config")
+    ? join(
+        HOME,
+        "Library",
+        "Application Support",
+        "com.mitchellh.ghostty",
+        "config",
+      )
     : join(HOME, ".config", "ghostty", "config"),
   ssh: join(HOME, ".ssh", "config"),
   neovim: join(HOME, ".config", "nvim"),
@@ -113,7 +119,7 @@ export function expandHome(path: string): string {
 // Contract home directory to ~
 export function contractHome(path: string): string {
   if (path.startsWith(HOME)) {
-    return "~" + path.slice(HOME.length);
+    return `~${path.slice(HOME.length)}`;
   }
   return path;
 }

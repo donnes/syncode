@@ -1,6 +1,6 @@
-import { homedir } from "os";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { Platform } from "../adapters/types";
 
 export interface AgentMetadata {

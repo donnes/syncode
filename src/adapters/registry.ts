@@ -1,4 +1,3 @@
-import type { AgentAdapter, AdapterRegistryEntry } from "./types";
 import { ampAdapter } from "./amp";
 import { antigravityAdapter } from "./antigravity";
 import { claudeAdapter } from "./claude";
@@ -14,6 +13,7 @@ import { kiroCliAdapter } from "./kiro-cli";
 import { opencodeAdapter } from "./opencode";
 import { rooAdapter } from "./roo";
 import { traeAdapter } from "./trae";
+import type { AdapterRegistryEntry, AgentAdapter } from "./types";
 import { vscodeAdapter } from "./vscode";
 import { windsurfAdapter } from "./windsurf";
 

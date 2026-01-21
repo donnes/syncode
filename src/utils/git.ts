@@ -1,8 +1,10 @@
-import { exec } from "./shell";
 import { REPO_ROOT } from "./paths";
+import { exec } from "./shell";
 
 export async function isGitRepo(): Promise<boolean> {
-  const result = await exec(`git -C "${REPO_ROOT}" rev-parse --is-inside-work-tree`);
+  const result = await exec(
+    `git -C "${REPO_ROOT}" rev-parse --is-inside-work-tree`,
+  );
   return result.success;
 }
 
@@ -17,7 +19,9 @@ export async function hasChanges(): Promise<boolean> {
 }
 
 export async function getUntrackedFiles(): Promise<string[]> {
-  const result = await exec(`git -C "${REPO_ROOT}" ls-files --others --exclude-standard`);
+  const result = await exec(
+    `git -C "${REPO_ROOT}" ls-files --others --exclude-standard`,
+  );
   if (!result.success || !result.stdout) return [];
   return result.stdout.split("\n").filter(Boolean);
 }
@@ -41,7 +45,7 @@ export async function stageAll(): Promise<boolean> {
 
 export async function stageFiles(files: string[]): Promise<boolean> {
   if (files.length === 0) return true;
-  const fileList = files.map(f => `"${f}"`).join(" ");
+  const fileList = files.map((f) => `"${f}"`).join(" ");
   const result = await exec(`git -C "${REPO_ROOT}" add ${fileList}`);
   return result.success;
 }

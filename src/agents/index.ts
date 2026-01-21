@@ -1,10 +1,10 @@
 export {
   type AgentMetadata,
   agentMetadata,
-  getAllAgentIds,
-  getAgentMetadata,
-  isAgentInstalled,
   detectInstalledAgents,
+  getAgentMetadata,
   getAgentsWithAdapters,
   getAgentsWithoutAdapters,
+  getAllAgentIds,
+  isAgentInstalled,
 } from "./metadata";

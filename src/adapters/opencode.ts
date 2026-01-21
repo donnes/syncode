@@ -2,33 +2,32 @@
  * OpenCode adapter
  */
 
-import { join, dirname } from "path";
 import {
-  existsSync,
-  statSync,
-  readdirSync,
   copyFileSync,
+  existsSync,
   renameSync,
-  unlinkSync,
+  statSync,
   symlinkSync,
-} from "fs";
-import type {
-  AgentAdapter,
-  Platform,
-  ImportResult,
-  ExportResult,
-  CanonicalSkill,
-} from "./types";
+  unlinkSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 import {
-  exists,
-  isSymlink,
-  getSymlinkTarget,
   copyDir,
   ensureDir,
+  exists,
+  getSymlinkTarget,
   isDirectory,
+  isSymlink,
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import type {
+  AgentAdapter,
+  CanonicalSkill,
+  ExportResult,
+  ImportResult,
+  Platform,
+} from "./types";
 
 export class OpenCodeAdapter implements AgentAdapter {
   readonly id = "opencode";
@@ -66,7 +65,12 @@ export class OpenCodeAdapter implements AgentAdapter {
    * Detect if OpenCode is installed on the current system
    */
   detect(): boolean {
-    const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+    const platform =
+      process.platform === "darwin"
+        ? "macos"
+        : process.platform === "win32"
+          ? "windows"
+          : "linux";
     return this.isInstalled(platform);
   }
 

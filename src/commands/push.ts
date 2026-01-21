@@ -4,35 +4,38 @@
 
 import * as p from "@clack/prompts";
 import { getConfig } from "../config/manager";
-import { expandHome } from "../utils/paths";
+import type { GlobalConfig } from "../config/types";
 import {
-  hasChanges,
-  getGitStatus,
-  stageAll,
   commit,
-  push,
   getCurrentBranch,
+  getGitStatus,
   getRemoteUrl,
+  hasChanges,
+  push,
+  stageAll,
 } from "../utils/git";
+import { expandHome } from "../utils/paths";
 
 export async function pushCommand() {
   p.intro("Push to Remote");
 
   // Get configuration
-  let config;
+  let config: GlobalConfig;
   try {
     config = getConfig();
-  } catch (error) {
+  } catch (_error) {
     p.cancel("Configuration not found. Run 'syncode new' first.");
     return;
   }
 
-  const repoPath = expandHome(config.repoPath);
+  const _repoPath = expandHome(config.repoPath);
 
   // Check for remote
   const remoteUrl = await getRemoteUrl();
   if (!remoteUrl) {
-    p.cancel("No remote repository configured. Add a remote with: git remote add origin <url>");
+    p.cancel(
+      "No remote repository configured. Add a remote with: git remote add origin <url>",
+    );
     return;
   }
 
@@ -48,7 +51,12 @@ export async function pushCommand() {
 
     const gitStatus = await getGitStatus();
     if (gitStatus) {
-      console.log(gitStatus.split("\n").map(l => `   ${l}`).join("\n"));
+      console.log(
+        gitStatus
+          .split("\n")
+          .map((l) => `   ${l}`)
+          .join("\n"),
+      );
       console.log("");
     }
 
@@ -101,7 +109,9 @@ export async function pushCommand() {
 
       spinner.stop("Changes committed");
     } else {
-      p.log.warning("Proceeding without committing (only pushing existing commits)");
+      p.log.warning(
+        "Proceeding without committing (only pushing existing commits)",
+      );
     }
   } else {
     p.log.success("Working tree is clean");
