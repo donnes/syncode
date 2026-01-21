@@ -126,7 +126,9 @@ export async function unsyncCommand() {
         s.message(`✓ Unsynced ${adapter.name}`);
         successCount++;
       } else {
-        s.message(`✗ Failed to unsync ${adapter.name}: configs not found in repo`);
+        s.message(
+          `✗ Failed to unsync ${adapter.name}: configs not found in repo`,
+        );
         failCount++;
       }
     } catch (error) {
