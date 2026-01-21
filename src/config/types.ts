@@ -63,11 +63,23 @@ export const DEFAULT_CONFIG: GlobalConfig = {
  * Available agent IDs
  */
 export const SUPPORTED_AGENTS = [
+  "amp",
+  "antigravity",
   "claude",
+  "clawdbot",
+  "codex",
   "cursor",
-  "windsurf",
+  "droid",
+  "gemini-cli",
+  "github-copilot",
+  "goose",
+  "kilo",
+  "kiro-cli",
   "opencode",
+  "roo",
+  "trae",
   "vscode",
+  "windsurf",
 ] as const;
 
 export type SupportedAgent = (typeof SUPPORTED_AGENTS)[number];

@@ -5,12 +5,14 @@
 import * as p from "@clack/prompts";
 import { getConfig } from "../config/manager";
 import { adapterRegistry } from "../adapters/registry";
+import type { Platform } from "../adapters/types";
+import type { GlobalConfig } from "../config/types";
 
 export async function syncCommand() {
   p.intro("Sync Agent Configs");
 
   // Get configuration
-  let config;
+  let config: GlobalConfig;
   try {
     config = getConfig();
   } catch (error) {
@@ -49,7 +51,12 @@ export async function syncCommand() {
   const s = p.spinner();
   s.start(`${direction === "import" ? "Importing" : "Exporting"} agent configs`);
 
-  const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+  const platform: Platform =
+    process.platform === "darwin"
+      ? "macos"
+      : process.platform === "win32"
+        ? "windows"
+        : "linux";
   const repoPath = config.repoPath.startsWith("~")
     ? config.repoPath.replace("~", process.env.HOME || "")
     : config.repoPath;
@@ -65,7 +72,7 @@ export async function syncCommand() {
       continue;
     }
 
-    const systemPath = adapter.getConfigPath(platform as any);
+    const systemPath = adapter.getConfigPath(platform);
     const agentRepoPath = adapter.getRepoPath(repoPath);
 
     try {

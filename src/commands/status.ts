@@ -1,7 +1,3 @@
-/**
- * Show status of agent configs
- */
-
 import * as p from "@clack/prompts";
 import { getConfig } from "../config/manager";
 import { getPlatformName } from "../utils/platform";
@@ -9,12 +5,14 @@ import { contractHome, expandHome } from "../utils/paths";
 import { hasChanges, getGitStatus } from "../utils/git";
 import { adapterRegistry } from "../adapters/registry";
 import { exists } from "../utils/fs";
+import { getAgentMetadata, isAgentInstalled } from "../agents";
+import type { Platform } from "../adapters/types";
+import type { GlobalConfig } from "../config/types";
 
 export async function statusCommand() {
   p.intro("Agent Config Status");
 
-  // Get configuration
-  let config;
+  let config: GlobalConfig;
   try {
     config = getConfig();
   } catch (error) {
@@ -24,7 +22,6 @@ export async function statusCommand() {
 
   const repoPath = expandHome(config.repoPath);
 
-  // Platform info
   p.log.info(`Platform: ${getPlatformName()}`);
   p.log.info(`Repository: ${contractHome(repoPath)}`);
   if (config.remote) {
@@ -33,21 +30,37 @@ export async function statusCommand() {
 
   console.log("");
 
-  // Agent status
   if (config.agents.length === 0) {
     p.log.warn("No agents configured");
   } else {
     const statusLines: string[] = [];
-    const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
+    const platform: Platform =
+      process.platform === "darwin"
+        ? "macos"
+        : process.platform === "win32"
+          ? "windows"
+          : "linux";
 
     for (const agentId of config.agents) {
       const adapter = adapterRegistry.get(agentId);
-      if (!adapter) {
-        statusLines.push(`⚠️  ${agentId.padEnd(12)} adapter not found`);
+      const metadata = getAgentMetadata(agentId);
+
+      if (!adapter && !metadata) {
+        statusLines.push(`⚠️  ${agentId.padEnd(12)} unknown agent`);
         continue;
       }
 
-      const systemPath = adapter.getConfigPath(platform as any);
+      const displayName = metadata?.displayName || adapter?.name || agentId;
+
+      if (!adapter) {
+        const installed = isAgentInstalled(agentId, platform);
+        const icon = installed ? "📋" : "○";
+        const statusText = installed ? "detected" : "not found";
+        statusLines.push(`${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} (metadata only)`);
+        continue;
+      }
+
+      const systemPath = adapter.getConfigPath(platform);
       const agentRepoPath = adapter.getRepoPath(repoPath);
 
       const existsInRepo = exists(agentRepoPath);
@@ -77,7 +90,7 @@ export async function statusCommand() {
         statusText = "not found";
       }
 
-      statusLines.push(`${icon}  ${adapter.name.padEnd(15)} ${statusText.padEnd(16)} ${syncMethod}`);
+      statusLines.push(`${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} ${syncMethod}`);
     }
 
     p.log.message(statusLines.join("\n"));
@@ -85,22 +98,14 @@ export async function statusCommand() {
 
   console.log("");
 
-  // Git status
-  try {
-    // Import REPO_ROOT from paths, but override with config repoPath
-    const { REPO_ROOT } = require("../utils/paths");
-    // Temporarily set REPO_ROOT for git operations
-    if (await hasChanges()) {
-      p.log.warning("Git: Uncommitted changes");
-      const gitStatus = await getGitStatus();
-      if (gitStatus) {
-        console.log(gitStatus.split("\n").map(l => `   ${l}`).join("\n"));
-      }
-    } else {
-      p.log.success("Git: Clean");
+  if (await hasChanges()) {
+    p.log.warning("Git: Uncommitted changes");
+    const gitStatus = await getGitStatus();
+    if (gitStatus) {
+      console.log(gitStatus.split("\n").map((line) => `   ${line}`).join("\n"));
     }
-  } catch (error) {
-    p.log.info("Git: Not a repository");
+  } else {
+    p.log.success("Git: Clean");
   }
 
   p.outro("Done");

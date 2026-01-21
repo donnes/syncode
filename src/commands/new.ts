@@ -1,7 +1,3 @@
-/**
- * Initialize a new agent config repository
- */
-
 import * as p from "@clack/prompts";
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -10,11 +6,12 @@ import { initConfig, configExists } from "../config/manager";
 import { expandHome, contractHome } from "../utils/paths";
 import { SUPPORTED_AGENTS } from "../config/types";
 import { adapterRegistry } from "../adapters/registry";
+import { detectInstalledAgents, getAgentMetadata, getAgentsWithAdapters } from "../agents";
+import type { Platform } from "../adapters/types";
 
 export async function newCommand() {
   p.intro("Initialize Agent Config Repository");
 
-  // Check if config already exists
   if (configExists()) {
     const overwrite = await p.confirm({
       message:
@@ -28,7 +25,6 @@ export async function newCommand() {
     }
   }
 
-  // 1. Directory Setup
   const repoPathInput = await p.text({
     message: "Where should the agent configs be stored?",
     placeholder: "~/agent-configs",
@@ -46,7 +42,6 @@ export async function newCommand() {
 
   const repoPath = expandHome(repoPathInput);
 
-  // Check if directory exists
   if (existsSync(repoPath)) {
     const useExisting = await p.confirm({
       message: `Directory ${contractHome(repoPath)} already exists. Use it?`,
@@ -58,7 +53,6 @@ export async function newCommand() {
       return;
     }
   } else {
-    // Create directory
     try {
       mkdirSync(repoPath, { recursive: true });
     } catch (error) {
@@ -67,7 +61,6 @@ export async function newCommand() {
     }
   }
 
-  // 2. Git Initialization
   const gitDir = join(repoPath, ".git");
   let isNewRepo = false;
   if (!existsSync(gitDir)) {
@@ -80,7 +73,6 @@ export async function newCommand() {
     }
   }
 
-  // 3. GitHub Remote (Optional)
   let remote: string | undefined;
   if (isNewRepo) {
     const remoteInput = await p.text({
@@ -107,25 +99,28 @@ export async function newCommand() {
     }
   }
 
-  // 4. Agent Selection with Auto-detection
-  const detectedAgents: string[] = [];
-  for (const agentId of SUPPORTED_AGENTS) {
-    const adapter = adapterRegistry.get(agentId);
-    if (adapter && "detect" in adapter && typeof adapter.detect === "function") {
-      if (adapter.detect()) {
-        detectedAgents.push(agentId);
-      }
-    }
-  }
+  const platform: Platform =
+    process.platform === "darwin"
+      ? "macos"
+      : process.platform === "win32"
+        ? "windows"
+        : "linux";
+  const detectedAgents = detectInstalledAgents(platform);
+  const agentsWithAdapters = getAgentsWithAdapters();
 
   const agentOptions = SUPPORTED_AGENTS.map((id) => {
     const detected = detectedAgents.includes(id);
-    const adapter = adapterRegistry.get(id);
-    const label = adapter ? adapter.name : id.charAt(0).toUpperCase() + id.slice(1);
+    const hasAdapter = agentsWithAdapters.includes(id);
+    const metadata = getAgentMetadata(id);
+    const label = metadata?.displayName || id.charAt(0).toUpperCase() + id.slice(1);
+    const hint = detected
+      ? (hasAdapter ? "Installed • Full sync" : "Installed • Metadata only")
+      : (hasAdapter ? "Not found • Full sync available" : "Not found");
+
     return {
       value: id,
       label: detected ? `${label} (detected ✓)` : label,
-      hint: detected ? "Installed" : "Not found",
+      hint,
     };
   });
 
@@ -147,14 +142,26 @@ export async function newCommand() {
     p.log.warn("No agents selected. You can add them later by editing ~/.syncode/config.json");
   }
 
-  // 5. Sync Strategy Info
   if (selectedAgents.length > 0) {
-    p.log.info("Using smart sync defaults:");
-    p.log.info("  • Symlinks: Cursor, OpenCode, Windsurf, VSCode (live sync)");
-    p.log.info("  • Copy: Claude Code (preserves cache/history)");
+    const selectedWithAdapters = selectedAgents.filter((id) => agentsWithAdapters.includes(id));
+    const selectedWithoutAdapters = selectedAgents.filter(
+      (id) => !agentsWithAdapters.includes(id)
+    );
+
+    if (selectedWithAdapters.length > 0) {
+      p.log.info("Using smart sync defaults:");
+      p.log.info("  • Symlinks: Cursor, OpenCode, Windsurf, VSCode (live sync)");
+      p.log.info("  • Copy: Claude Code (preserves cache/history)");
+    }
+
+    if (selectedWithoutAdapters.length > 0) {
+      const agentNames = selectedWithoutAdapters
+        .map((id) => getAgentMetadata(id)?.displayName || id)
+        .join(", ");
+      p.log.warn(`Note: ${agentNames} - metadata only (no sync adapter yet)`);
+    }
   }
 
-  // 6. Dotfiles (Optional)
   const includeDotfiles = await p.confirm({
     message: "Include dotfiles management? (zsh, bash, ghostty, tmux)",
     initialValue: false,
@@ -165,7 +172,6 @@ export async function newCommand() {
     return;
   }
 
-  // 7. Backup & Import
   const s = p.spinner();
   s.start("Setting up repository structure and importing configs");
 
@@ -173,13 +179,17 @@ export async function newCommand() {
     const configsDir = join(repoPath, "configs");
     mkdirSync(configsDir, { recursive: true });
 
-    // Import agent configs
     for (const agentId of selectedAgents) {
       const adapter = adapterRegistry.get(agentId);
-      if (!adapter) continue;
+      if (!adapter) {
+        const metadata = getAgentMetadata(agentId);
+        if (metadata) {
+          s.message(`${metadata.displayName}: metadata only, no import needed`);
+        }
+        continue;
+      }
 
-      const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
-      const systemPath = adapter.getConfigPath(platform as any);
+      const systemPath = adapter.getConfigPath(platform);
       const agentRepoPath = adapter.getRepoPath(repoPath);
 
       try {
@@ -192,12 +202,10 @@ export async function newCommand() {
       }
     }
 
-    // Create dotfiles directory if requested
     if (includeDotfiles) {
       mkdirSync(join(configsDir, "dotfiles"), { recursive: true });
     }
 
-    // Create .gitignore
     const gitignoreContent = `# macOS
 .DS_Store
 
@@ -216,7 +224,6 @@ node_modules/
     const { writeFileSync } = require("fs");
     writeFileSync(join(repoPath, ".gitignore"), gitignoreContent);
 
-    // Create README
     const readmeContent = `# Agent Config Repository
 
 Managed by [syncode](https://github.com/donnes/syncode)
@@ -263,7 +270,6 @@ git push
 `;
     writeFileSync(join(repoPath, "README.md"), readmeContent);
 
-    // 9. Initial Commit
     if (isNewRepo) {
       execSync("git add .", { cwd: repoPath, stdio: "pipe" });
       execSync('git commit -m "Initial commit: Add agent configs"', {
@@ -280,7 +286,6 @@ git push
     return;
   }
 
-  // 8. Create Configuration
   try {
     const config = initConfig({
       repoPath: repoPathInput, // Store as entered (with ~ if used)
@@ -288,12 +293,15 @@ git push
       agents: selectedAgents,
     });
 
-    const agentList = selectedAgents.length > 0
-      ? selectedAgents.map(id => {
-          const adapter = adapterRegistry.get(id);
-          return adapter ? adapter.name : id;
-        }).join(", ")
-      : "none";
+    const agentList =
+      selectedAgents.length > 0
+        ? selectedAgents
+            .map((id) => {
+              const adapter = adapterRegistry.get(id);
+              return adapter ? adapter.name : id;
+            })
+            .join(", ")
+        : "none";
 
     p.outro(
       `✓ Agent config repository initialized!
