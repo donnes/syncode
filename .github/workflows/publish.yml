@@ -34,6 +34,21 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Commit release version
+        id: commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "release: v${{ steps.publish.outputs.version }}"
+          file_pattern: "package.json"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.publish.outputs.version }}"
+          name: "v${{ steps.publish.outputs.version }}"
+          generate_release_notes: true
+          target_commitish: ${{ steps.commit.outputs.commit_hash }}
+
     outputs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
