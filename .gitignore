@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Bun
+bun.lockb
+
+# Environment
+.env
+.env.*
+*.local
+
+# Secrets - never commit these
+*.pem
+*.key
+id_rsa
+id_ed25519
+credentials.json
+secrets.json
+
+# Backups created by ds
+*.backup
+
+# Repo path tracking (machine-specific)
+.repo-path
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

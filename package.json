@@ -1,0 +1,62 @@
+{
+  "name": "@donnes/config-sync",
+  "version": "1.0.0",
+  "description": "Agent Configuration Manager - Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
+  "type": "module",
+  "bin": {
+    "config-sync": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "opencode",
+    "vscode",
+    "ai-coding",
+    "code-agent",
+    "skill-conversion",
+    "config-sync",
+    "dotfiles",
+    "configuration-management",
+    "developer-tools",
+    "ai-assistant",
+    "coding-assistant"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donnes/config-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/donnes/config-sync/issues"
+  },
+  "homepage": "https://github.com/donnes/config-sync#readme",
+  "author": "Donald Silveira",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.9.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
+  }
+}
