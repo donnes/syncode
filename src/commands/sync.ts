@@ -70,16 +70,33 @@ export async function syncCommand() {
     };
   });
 
-  const selectedAgents = await p.multiselect({
-    message: `Select agents to ${direction === "import" ? "import" : "export"}`,
-    options: agentOptions,
-    initialValues: config.agents,
-    required: false,
+  // Ask if user wants to select all agents
+  const selectAll = await p.confirm({
+    message: `${direction === "import" ? "Import" : "Export"} all agents?`,
+    initialValue: true,
   });
 
-  if (p.isCancel(selectedAgents)) {
+  if (p.isCancel(selectAll)) {
     p.cancel("Cancelled");
     return;
+  }
+
+  let selectedAgents: string[] | symbol;
+
+  if (selectAll) {
+    selectedAgents = config.agents;
+  } else {
+    selectedAgents = await p.multiselect({
+      message: `Select agents to ${direction === "import" ? "import" : "export"}`,
+      options: agentOptions,
+      initialValues: [],
+      required: false,
+    });
+
+    if (p.isCancel(selectedAgents)) {
+      p.cancel("Cancelled");
+      return;
+    }
   }
 
   if ((selectedAgents as string[]).length === 0) {
@@ -98,11 +115,14 @@ export async function syncCommand() {
 
   let successCount = 0;
   let failCount = 0;
+  const errors: Array<{ agent: string; error: string }> = [];
 
   for (const agentId of selectedAgents as string[]) {
     const adapter = adapterRegistry.get(agentId);
     if (!adapter) {
-      s.message(`Warning: Adapter not found for ${agentId}`);
+      const errorMsg = "Adapter not found";
+      s.message(`✗ ${agentId}: ${errorMsg}`);
+      errors.push({ agent: agentId, error: errorMsg });
       failCount++;
       continue;
     }
@@ -117,7 +137,8 @@ export async function syncCommand() {
           s.message(`✓ Imported ${adapter.name}`);
           successCount++;
         } else {
-          s.message(`✗ Failed to import ${adapter.name}: ${result.message}`);
+          s.message(`✗ ${adapter.name}: ${result.message}`);
+          errors.push({ agent: adapter.name, error: result.message || "Unknown error" });
           failCount++;
         }
       } else {
@@ -126,17 +147,28 @@ export async function syncCommand() {
           s.message(`✓ Exported ${adapter.name}`);
           successCount++;
         } else {
-          s.message(`✗ Failed to export ${adapter.name}: ${result.message}`);
+          s.message(`✗ ${adapter.name}: ${result.message}`);
+          errors.push({ agent: adapter.name, error: result.message || "Unknown error" });
           failCount++;
         }
       }
     } catch (error) {
-      s.message(`✗ Error syncing ${adapter.name}: ${error}`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      s.message(`✗ ${adapter.name}: ${errorMsg}`);
+      errors.push({ agent: adapter.name, error: errorMsg });
       failCount++;
     }
   }
 
   s.stop(`Sync complete: ${successCount} succeeded, ${failCount} failed`);
+
+  if (errors.length > 0) {
+    console.log("");
+    p.log.error("Failed agents:");
+    for (const { agent, error } of errors) {
+      p.log.message(`  ✗ ${agent}: ${error}`);
+    }
+  }
 
   p.outro(
     direction === "import"
