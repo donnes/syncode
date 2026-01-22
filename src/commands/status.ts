@@ -14,9 +14,14 @@ import { machineStatusCommand } from "./machine/status";
 function createAsciiTable(rows: string[][], headers?: string[]): string {
   const allRows = headers ? [headers, ...rows] : rows;
 
+  // Handle empty rows
+  if (allRows.length === 0 || !allRows[0]) {
+    return "";
+  }
+
   // Calculate column widths
   const colWidths = allRows[0].map((_, colIndex) =>
-    Math.max(...allRows.map((row) => row[colIndex]?.length || 0))
+    Math.max(...allRows.map((row) => row[colIndex]?.length || 0)),
   );
 
   // Create separator line
@@ -24,8 +29,8 @@ function createAsciiTable(rows: string[][], headers?: string[]): string {
 
   // Format rows
   const formattedRows = allRows.map((row, rowIndex) => {
-    const cells = row.map((cell, colIndex) =>
-      ` ${cell.padEnd(colWidths[colIndex])} `
+    const cells = row.map(
+      (cell, colIndex) => ` ${cell.padEnd(colWidths[colIndex] ?? 0)} `,
     );
     const line = `|${cells.join("|")}|`;
 
@@ -35,7 +40,7 @@ function createAsciiTable(rows: string[][], headers?: string[]): string {
     return line;
   });
 
-  return `${headers ? "" : separator + "\n"}${formattedRows.join("\n")}\n${separator}`;
+  return `${headers ? "" : `${separator}\n`}${formattedRows.join("\n")}\n${separator}`;
 }
 
 export async function statusCommand() {

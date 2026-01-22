@@ -138,7 +138,10 @@ export async function syncCommand() {
           successCount++;
         } else {
           s.message(`✗ ${adapter.name}: ${result.message}`);
-          errors.push({ agent: adapter.name, error: result.message || "Unknown error" });
+          errors.push({
+            agent: adapter.name,
+            error: result.message || "Unknown error",
+          });
           failCount++;
         }
       } else {
@@ -148,7 +151,10 @@ export async function syncCommand() {
           successCount++;
         } else {
           s.message(`✗ ${adapter.name}: ${result.message}`);
-          errors.push({ agent: adapter.name, error: result.message || "Unknown error" });
+          errors.push({
+            agent: adapter.name,
+            error: result.message || "Unknown error",
+          });
           failCount++;
         }
       }

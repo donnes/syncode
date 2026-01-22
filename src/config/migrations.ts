@@ -4,9 +4,9 @@
 
 import * as p from "@clack/prompts";
 import { getAgentMetadata } from "../agents/metadata";
-import { SUPPORTED_AGENTS } from "./types";
-import type { GlobalConfig } from "./types";
 import { getConfig, setConfig } from "./manager";
+import type { GlobalConfig } from "./types";
+import { SUPPORTED_AGENTS } from "./types";
 
 export async function checkAndMigrateConfig(
   silent: boolean = false,

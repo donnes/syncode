@@ -21,8 +21,8 @@ import {
   isSymlink,
   removeDir,
 } from "../utils/fs";
-import { isMacOS } from "../utils/platform";
 import { contractHome, HOME } from "../utils/paths";
+import { isMacOS } from "../utils/platform";
 import type {
   AgentAdapter,
   ExportResult,
@@ -115,7 +115,7 @@ export class DotfilesAdapter implements AgentAdapter {
     return true;
   }
 
-  isLinked(systemPath: string, repoPath: string): boolean {
+  isLinked(_systemPath: string, repoPath: string): boolean {
     for (const mapping of this.dotfilesList) {
       const systemFile = mapping.systemPath;
       const repoFile = join(repoPath, mapping.repoPath);
@@ -130,7 +130,7 @@ export class DotfilesAdapter implements AgentAdapter {
     return false;
   }
 
-  async import(systemPath: string, repoPath: string): Promise<ImportResult> {
+  async import(_systemPath: string, repoPath: string): Promise<ImportResult> {
     ensureDir(repoPath);
 
     const filesImported: string[] = [];
@@ -242,7 +242,9 @@ export class DotfilesAdapter implements AgentAdapter {
           try {
             chmodSync(srcPath, 0o600);
           } catch (error) {
-            errors.push(`Warning: Could not set SSH config permissions: ${error}`);
+            errors.push(
+              `Warning: Could not set SSH config permissions: ${error}`,
+            );
           }
         }
 
