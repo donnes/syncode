@@ -159,8 +159,9 @@ Examples:
   syncode machine      # Machine setup tools
 
 Quick Start:
-  npx @donnes/syncode new    # Quick setup with npx
-  npm i -g @donnes/syncode   # Or install globally
+  npx @donnes/syncode new           # Quick setup with npx
+  npm install -g @donnes/syncode    # Or install globally
+  bun install -g @donnes/syncode    # Or using bun
 `);
 }
 

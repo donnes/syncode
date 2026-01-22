@@ -264,6 +264,8 @@ Managed by [syncode](https://github.com/donnes/syncode)
 \`\`\`bash
 # Install syncode
 npm install -g @donnes/syncode
+# Or using bun
+bun install -g @donnes/syncode
 
 # Initialize from existing repo
 syncode init
