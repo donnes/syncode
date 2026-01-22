@@ -11,6 +11,33 @@ import { contractHome, expandHome } from "../utils/paths";
 import { getPlatformName } from "../utils/platform";
 import { machineStatusCommand } from "./machine/status";
 
+function createAsciiTable(rows: string[][], headers?: string[]): string {
+  const allRows = headers ? [headers, ...rows] : rows;
+
+  // Calculate column widths
+  const colWidths = allRows[0].map((_, colIndex) =>
+    Math.max(...allRows.map((row) => row[colIndex]?.length || 0))
+  );
+
+  // Create separator line
+  const separator = `+${colWidths.map((w) => "-".repeat(w + 2)).join("+")}+`;
+
+  // Format rows
+  const formattedRows = allRows.map((row, rowIndex) => {
+    const cells = row.map((cell, colIndex) =>
+      ` ${cell.padEnd(colWidths[colIndex])} `
+    );
+    const line = `|${cells.join("|")}|`;
+
+    if (headers && rowIndex === 0) {
+      return `${separator}\n${line}\n${separator}`;
+    }
+    return line;
+  });
+
+  return `${headers ? "" : separator + "\n"}${formattedRows.join("\n")}\n${separator}`;
+}
+
 export async function statusCommand() {
   p.intro("Agent Config Status");
 
@@ -26,18 +53,23 @@ export async function statusCommand() {
 
   const repoPath = expandHome(config.repoPath);
 
-  p.log.info(`Platform: ${getPlatformName()}`);
-  p.log.info(`Repository: ${contractHome(repoPath)}`);
+  // Repository info table
+  const repoInfoRows: string[][] = [
+    ["Platform", getPlatformName()],
+    ["Repository", contractHome(repoPath)],
+  ];
+
   if (config.remote) {
-    p.log.info(`Remote: ${config.remote}`);
+    repoInfoRows.push(["Remote", config.remote]);
   }
 
+  console.log(createAsciiTable(repoInfoRows));
   console.log("");
 
   if (config.agents.length === 0) {
     p.log.warn("No agents configured");
   } else {
-    const statusLines: string[] = [];
+    const agentRows: string[][] = [];
     const platform: Platform =
       process.platform === "darwin"
         ? "macos"
@@ -50,7 +82,7 @@ export async function statusCommand() {
       const metadata = getAgentMetadata(agentId);
 
       if (!adapter && !metadata) {
-        statusLines.push(`⚠️  ${agentId.padEnd(12)} unknown agent`);
+        agentRows.push(["⚠️", agentId, "unknown agent", ""]);
         continue;
       }
 
@@ -60,9 +92,7 @@ export async function statusCommand() {
         const installed = isAgentInstalled(agentId, platform);
         const icon = installed ? "📋" : "○";
         const statusText = installed ? "detected" : "not found";
-        statusLines.push(
-          `${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} (metadata only)`,
-        );
+        agentRows.push([icon, displayName, statusText, "metadata only"]);
         continue;
       }
 
@@ -81,12 +111,12 @@ export async function statusCommand() {
         icon = "🔗";
         statusText = "linked";
         syncMethod =
-          adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
+          adapter.syncStrategy.export === "symlink" ? "symlink" : "copy";
       } else if (existsInRepo && existsOnSystem) {
         icon = "✓";
         statusText = "synced";
         syncMethod =
-          adapter.syncStrategy.export === "symlink" ? "(symlink)" : "(copy)";
+          adapter.syncStrategy.export === "symlink" ? "symlink" : "copy";
       } else if (existsInRepo && !existsOnSystem) {
         icon = "📦";
         statusText = "in repo only";
@@ -98,19 +128,19 @@ export async function statusCommand() {
         statusText = "not found";
       }
 
-      statusLines.push(
-        `${icon}  ${displayName.padEnd(15)} ${statusText.padEnd(16)} ${syncMethod}`,
-      );
+      agentRows.push([icon, displayName, statusText, syncMethod]);
     }
 
-    p.log.message(statusLines.join("\n"));
+    console.log(createAsciiTable(agentRows, ["", "Agent", "Status", "Method"]));
   }
 
   console.log("");
 
+  // Git status table
   if (await hasChanges()) {
-    p.log.warning("Git: Uncommitted changes");
     const gitStatus = await getGitStatus();
+    const gitStatusRows: string[][] = [["Git", "Uncommitted changes"]];
+    console.log(createAsciiTable(gitStatusRows));
     if (gitStatus) {
       console.log(
         gitStatus
@@ -118,9 +148,11 @@ export async function statusCommand() {
           .map((line) => `   ${line}`)
           .join("\n"),
       );
+      console.log("");
     }
   } else {
-    p.log.success("Git: Clean");
+    const gitStatusRows: string[][] = [["Git", "Clean"]];
+    console.log(createAsciiTable(gitStatusRows));
   }
 
   const newConfigs = getNewConfigsAvailable();
@@ -129,8 +161,11 @@ export async function statusCommand() {
       .map((id) => getAgentMetadata(id)?.displayName || id)
       .join(", ");
     console.log("");
-    p.log.info(`💡 New config available: ${names}`);
-    p.log.info(`   Run 'syncode sync' to add it to your config`);
+    const newConfigRows: string[][] = [
+      ["💡 New config available", names],
+      ["Action", "Run 'syncode sync' to add it to your config"],
+    ];
+    console.log(createAsciiTable(newConfigRows));
   }
 
   const runMachineStatus = await p.confirm({
