@@ -1,11 +1,11 @@
 # Commands
 
 ## Tooling
-- Install dependencies: `bun install` or `npm install`
+- Install dependencies: `bun install`
 - Run CLI in dev mode: `bun run dev` (uses tsx)
 - Build for production: `bun run build` (uses tsup)
 - Type check: `bun run typecheck` (uses `tsc --noEmit`)
-- Link CLI globally: `bun link` or `npm link`
+- Link CLI globally: `bun link`
 - CLI usage help: `syncode help`
 
 ## Release/build checklist

@@ -8,8 +8,6 @@ This project requires Node.js ≥20 or Bun. Install dependencies with:
 
 ```bash
 bun install
-# or
-npm install
 ```
 
 ## Development Workflow

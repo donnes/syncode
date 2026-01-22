@@ -4,7 +4,7 @@ Syncode is a Node.js/Bun TypeScript CLI that syncs AI agent configurations via a
 
 ## Essentials
 - Runtime: Node.js >=20
-- Package manager: npm (bun supported)
+- Package manager: bun
 - Non-standard commands:
   - `bun run dev`
   - `bun run build`
