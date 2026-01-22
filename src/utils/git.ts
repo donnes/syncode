@@ -1,4 +1,4 @@
-import { getRepoRoot, REPO_ROOT } from "./paths";
+import { getRepoRoot } from "./paths";
 import { exec } from "./shell";
 
 export async function isGitRepo(): Promise<boolean> {
