@@ -96,6 +96,14 @@ export function copyDir(src: string, dest: string): void {
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
+      if (
+        entry.isSocket() ||
+        entry.isFIFO() ||
+        entry.isCharacterDevice() ||
+        entry.isBlockDevice()
+      ) {
+        continue;
+      }
       copyFileSync(srcPath, destPath);
     }
   }
