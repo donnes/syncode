@@ -7,6 +7,7 @@ import {
   readFileSync,
   readlinkSync,
   renameSync,
+  rmdirSync,
   statSync,
   symlinkSync,
   unlinkSync,
@@ -172,7 +173,6 @@ export function removeDir(path: string): void {
   }
 
   // Remove the directory itself
-  const { rmdirSync } = require("node:fs");
   rmdirSync(path);
 }
 
