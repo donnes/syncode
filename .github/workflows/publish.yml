@@ -14,7 +14,19 @@ on:
           - major
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
   publish:
+    needs: setup
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -34,21 +46,36 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    outputs:
+      version: ${{ steps.publish.outputs.version }}
+      tag: ${{ steps.publish.outputs.tag }}
+
+  commit:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Commit release version
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "release: v${{ steps.publish.outputs.version }}"
+          commit_message: "release: v${{ needs.publish.outputs.version }}"
           file_pattern: "package.json"
 
+    outputs:
+      commit_hash: ${{ steps.commit.outputs.commit_hash }}
+
+  release:
+    needs: [publish, commit]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v${{ steps.publish.outputs.version }}"
-          name: "v${{ steps.publish.outputs.version }}"
+          tag_name: "v${{ needs.publish.outputs.tag }}"
+          name: "v${{ needs.publish.outputs.version }}"
           generate_release_notes: true
-          target_commitish: ${{ steps.commit.outputs.commit_hash }}
-
-    outputs:
-      version: ${{ steps.publish.outputs.version }}
-      tag: ${{ steps.publish.outputs.tag }}
+          target_commitish: ${{ needs.commit.outputs.commit_hash }}
