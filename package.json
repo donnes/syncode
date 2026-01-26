@@ -17,6 +17,7 @@
 	"scripts": {
 		"build": "tsup",
 		"dev": "tsx src/index.ts",
+		"test": "tsx tests/fs.test.ts",
 		"prepublishOnly": "npm run build",
 		"check:lint": "biome check . --diagnostic-level=error",
 		"check:unsafe": "biome check . --write --unsafe --diagnostic-level=error",

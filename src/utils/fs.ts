@@ -7,6 +7,7 @@ import {
   readFileSync,
   readlinkSync,
   renameSync,
+  rmdirSync,
   statSync,
   symlinkSync,
   unlinkSync,
@@ -85,6 +86,17 @@ export function copyFile(src: string, dest: string): void {
   copyFileSync(src, dest);
 }
 
+// Directories to skip when copying (version control, package managers, caches)
+const SKIP_DIRECTORIES = new Set([
+  ".git",
+  ".svn",
+  ".hg",
+  "node_modules",
+  ".cache",
+  "__pycache__",
+  ".DS_Store",
+]);
+
 export function copyDir(src: string, dest: string): void {
   ensureDir(dest);
   const entries = readdirSync(src, { withFileTypes: true });
@@ -93,10 +105,56 @@ export function copyDir(src: string, dest: string): void {
     const srcPath = join(src, entry.name);
     const destPath = join(dest, entry.name);
 
+    // Skip entries in the skip list
+    if (SKIP_DIRECTORIES.has(entry.name)) {
+      continue;
+    }
+
+    // Handle symlinks - preserve them rather than following
+    if (entry.isSymbolicLink()) {
+      try {
+        const linkTarget = readlinkSync(srcPath);
+        // Check if target exists to avoid broken symlinks
+        if (existsSync(srcPath)) {
+          // Recreate the symlink at destination
+          ensureParentDir(destPath);
+          try {
+            // Remove existing file/symlink if present
+            unlinkSync(destPath);
+          } catch {
+            // Ignore if doesn't exist
+          }
+          symlinkSync(linkTarget, destPath);
+        }
+        // Skip broken symlinks silently
+      } catch {
+        // Skip symlinks that can't be read
+      }
+      continue;
+    }
+
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
-      copyFileSync(srcPath, destPath);
+      // Skip special file types
+      if (
+        entry.isSocket() ||
+        entry.isFIFO() ||
+        entry.isCharacterDevice() ||
+        entry.isBlockDevice()
+      ) {
+        continue;
+      }
+      try {
+        copyFileSync(srcPath, destPath);
+      } catch (error) {
+        // Skip files that can't be copied (permission issues, etc.)
+        // but don't fail the entire operation
+        const nodeError = error as NodeJS.ErrnoException;
+        if (nodeError.code !== "ENOENT" && nodeError.code !== "EACCES") {
+          throw error;
+        }
+      }
     }
   }
 }
@@ -115,7 +173,6 @@ export function removeDir(path: string): void {
   }
 
   // Remove the directory itself
-  const { rmdirSync } = require("node:fs");
   rmdirSync(path);
 }
 
