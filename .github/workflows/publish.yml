@@ -1,4 +1,4 @@
-name: Release & Publish 
+name: Release & Publish
 run-name: "release ${{ inputs.bump }}"
 
 on:
@@ -22,6 +22,7 @@ jobs:
     outputs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
+      commit_hash: ${{ steps.save_hash.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,17 +41,13 @@ jobs:
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "release: v${{ steps.publish.outputs.version }}"
+          commit_message: "release: v${{ needs.publish.outputs.version }}"
           file_pattern: "package.json"
+          token: ${{ secrets.GH_PAT }}
 
       - name: Save Commit Hash
         id: save_hash
         run: echo "hash=${{ steps.commit.outputs.commit_hash || github.sha }}" >> $GITHUB_OUTPUT
-
-    outputs:
-      version: ${{ steps.publish.outputs.version }}
-      tag: ${{ steps.publish.outputs.tag }}
-      commit_hash: ${{ steps.save_hash.outputs.hash }}
 
   release:
     needs: publish
