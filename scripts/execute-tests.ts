@@ -81,8 +81,7 @@ async function main(): Promise<void> {
   let testFiles: string[];
   try {
     testFiles = await findTestFiles(opts.testsDir);
-  } catch (err) {
-    const _msg = err instanceof Error ? err.message : String(err);
+  } catch {
     process.exit(1);
   }
 

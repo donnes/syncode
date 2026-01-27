@@ -11,6 +11,7 @@ import { pushCommand } from "./commands/push";
 import { statusCommand } from "./commands/status";
 import { syncCommand } from "./commands/sync";
 import { unsyncCommand } from "./commands/unsync";
+import { checkForUpdates } from "./utils/update-check";
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,11 @@ const commands = {
 
 async function main() {
   const args = process.argv.slice(2);
+
+  await checkForUpdates({
+    currentVersion: VERSION,
+    packageName: packageJson.name,
+  });
 
   // Handle --version flag
   if (args.includes("--version") || args.includes("-v")) {
