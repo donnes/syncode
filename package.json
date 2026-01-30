@@ -1,68 +1,68 @@
 {
-	"name": "@donnes/syncode",
-	"version": "1.1.6",
-	"description": "Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
-	"private": false,
-	"type": "module",
-	"bin": {
-		"syncode": "./dist/index.js"
-	},
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"files": [
-		"dist",
-		"README.md",
-		"LICENSE"
-	],
-	"scripts": {
-		"build": "tsup",
-		"dev": "tsx src/index.ts",
-		"test": "tsx scripts/execute-tests.ts",
-		"prepublishOnly": "npm run build",
-		"check:lint": "biome check . --diagnostic-level=error",
-		"check:unsafe": "biome check . --write --unsafe --diagnostic-level=error",
-		"check:types": "bunx tsc --noEmit"
-	},
-	"keywords": [
-		"ai-agents",
-		"claude-code",
-		"cursor",
-		"windsurf",
-		"opencode",
-		"vscode",
-		"ai-coding",
-		"code-agent",
-		"skill-conversion",
-		"syncode",
-		"dotfiles",
-		"configuration-management",
-		"developer-tools",
-		"ai-assistant",
-		"coding-assistant"
-	],
-	"engines": {
-		"node": ">=20.0.0"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/donnes/syncode.git"
-	},
-	"bugs": {
-		"url": "https://github.com/donnes/syncode/issues"
-	},
-	"homepage": "https://github.com/donnes/syncode#readme",
-	"author": "Donald Silveira",
-	"license": "MIT",
-	"dependencies": {
-		"@clack/prompts": "^0.9.1"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.11",
-		"@opencode-ai/sdk": "^1.1.41",
-		"@types/bun": "latest",
-		"@types/node": "^20.0.0",
-		"tsup": "^8.5.1",
-		"tsx": "^4.21.0",
-		"typescript": "^5.7.3"
-	}
+  "name": "@donnes/syncode",
+  "version": "1.1.7",
+  "description": "Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
+  "private": false,
+  "type": "module",
+  "bin": {
+    "syncode": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "test": "tsx scripts/execute-tests.ts",
+    "prepublishOnly": "npm run build",
+    "check:lint": "biome check . --diagnostic-level=error",
+    "check:unsafe": "biome check . --write --unsafe --diagnostic-level=error",
+    "check:types": "bunx tsc --noEmit"
+  },
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "opencode",
+    "vscode",
+    "ai-coding",
+    "code-agent",
+    "skill-conversion",
+    "syncode",
+    "dotfiles",
+    "configuration-management",
+    "developer-tools",
+    "ai-assistant",
+    "coding-assistant"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donnes/syncode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/donnes/syncode/issues"
+  },
+  "homepage": "https://github.com/donnes/syncode#readme",
+  "author": "Donald Silveira",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.9.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.11",
+    "@opencode-ai/sdk": "^1.1.41",
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
+  }
 }
