@@ -116,6 +116,10 @@ export class CursorAdapter implements AgentAdapter {
 
       if (!existsSync(srcPath)) continue;
 
+      if (isSymlink(srcPath)) continue;
+
+      if (existsSync(destPath)) continue;
+
       if (statSync(srcPath).isDirectory()) {
         copyDir(srcPath, destPath);
         filesImported.push(`${pattern}/`);
@@ -159,8 +163,13 @@ export class CursorAdapter implements AgentAdapter {
 
       if (!existsSync(srcPath)) continue;
 
-      // Backup existing file/dir if not a symlink
-      if (exists(destPath) && !isSymlink(destPath)) {
+      if (isSymlink(destPath)) {
+        const target = getSymlinkTarget(destPath);
+        if (target === srcPath) {
+          continue;
+        }
+        unlinkSync(destPath);
+      } else if (exists(destPath)) {
         const backupPath = `${destPath}.backup`;
         if (exists(backupPath)) {
           if (isDirectory(backupPath)) {
@@ -173,8 +182,6 @@ export class CursorAdapter implements AgentAdapter {
         if (!backedUp) {
           backedUp = contractHome(dirname(backupPath));
         }
-      } else if (isSymlink(destPath)) {
-        unlinkSync(destPath);
       }
 
       // Create symlink

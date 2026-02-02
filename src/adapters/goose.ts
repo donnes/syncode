@@ -9,6 +9,7 @@ import {
   createSymlink,
   ensureDir,
   exists,
+  getSymlinkTarget,
   isSymlink,
   removeDir,
 } from "../utils/fs";
@@ -52,7 +53,10 @@ export class GooseAdapter implements AgentAdapter {
   }
 
   isLinked(systemPath: string, repoPath: string): boolean {
-    return exists(systemPath) && exists(repoPath) && isSymlink(systemPath);
+    if (!exists(systemPath) || !exists(repoPath) || !isSymlink(systemPath)) {
+      return false;
+    }
+    return getSymlinkTarget(systemPath) === repoPath;
   }
 
   async import(systemPath: string, repoPath: string): Promise<ImportResult> {
@@ -60,6 +64,20 @@ export class GooseAdapter implements AgentAdapter {
       return {
         success: false,
         message: "Goose config not found on system",
+      };
+    }
+
+    if (isSymlink(systemPath)) {
+      return {
+        success: true,
+        message: "Already linked to repo - no import needed",
+      };
+    }
+
+    if (exists(repoPath)) {
+      return {
+        success: true,
+        message: "Configs already in repo - no import needed",
       };
     }
 
@@ -78,6 +96,17 @@ export class GooseAdapter implements AgentAdapter {
         success: false,
         message: "Goose configs not found in repo",
       };
+    }
+
+    if (isSymlink(systemPath)) {
+      const target = getSymlinkTarget(systemPath);
+      if (target === repoPath) {
+        return {
+          success: true,
+          message: "Already linked to repo - no export needed",
+          linkedTo: repoPath,
+        };
+      }
     }
 
     // Remove existing (symlink or directory)

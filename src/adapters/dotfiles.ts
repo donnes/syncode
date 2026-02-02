@@ -153,6 +153,14 @@ export class DotfilesAdapter implements AgentAdapter {
         continue;
       }
 
+      if (isSymlink(srcPath)) {
+        continue;
+      }
+
+      if (existsSync(destPath)) {
+        continue;
+      }
+
       try {
         if (mapping.isDir) {
           if (!statSync(srcPath).isDirectory()) {
@@ -221,7 +229,13 @@ export class DotfilesAdapter implements AgentAdapter {
       try {
         ensureDir(dirname(destPath));
 
-        if (exists(destPath) && !isSymlink(destPath)) {
+        if (isSymlink(destPath)) {
+          const target = getSymlinkTarget(destPath);
+          if (target === srcPath) {
+            continue;
+          }
+          unlinkSync(destPath);
+        } else if (exists(destPath)) {
           const backupPath = `${destPath}.backup`;
           if (exists(backupPath)) {
             if (isDirectory(backupPath)) {
@@ -234,8 +248,6 @@ export class DotfilesAdapter implements AgentAdapter {
           if (!backedUp) {
             backedUp = contractHome(dirname(backupPath));
           }
-        } else if (isSymlink(destPath)) {
-          unlinkSync(destPath);
         }
 
         symlinkSync(srcPath, destPath);

@@ -52,6 +52,8 @@ pkg.version = newVersion;
 await writeFile("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
 console.log("Updated package.json");
 
+await $`bun check:unsafe`;
+
 // 5. Git operations
 const tag = `v${newVersion}`;
 let output = `version=${newVersion}\ntag=${tag}\n`;

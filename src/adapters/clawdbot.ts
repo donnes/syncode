@@ -9,6 +9,7 @@ import {
   createSymlink,
   ensureDir,
   exists,
+  getSymlinkTarget,
   isSymlink,
   removeDir,
 } from "../utils/fs";
@@ -62,7 +63,10 @@ export class ClawdbotAdapter implements AgentAdapter {
   }
 
   isLinked(systemPath: string, repoPath: string): boolean {
-    return exists(systemPath) && exists(repoPath) && isSymlink(systemPath);
+    if (!exists(systemPath) || !exists(repoPath) || !isSymlink(systemPath)) {
+      return false;
+    }
+    return getSymlinkTarget(systemPath) === repoPath;
   }
 
   async import(systemPath: string, repoPath: string): Promise<ImportResult> {
@@ -70,6 +74,20 @@ export class ClawdbotAdapter implements AgentAdapter {
       return {
         success: false,
         message: "Clawdbot config not found on system",
+      };
+    }
+
+    if (isSymlink(systemPath)) {
+      return {
+        success: true,
+        message: "Already linked to repo - no import needed",
+      };
+    }
+
+    if (exists(repoPath)) {
+      return {
+        success: true,
+        message: "Configs already in repo - no import needed",
       };
     }
 
@@ -110,6 +128,17 @@ export class ClawdbotAdapter implements AgentAdapter {
     repoPath: string,
     systemPath: string,
   ): Promise<ExportResult> {
+    if (isSymlink(systemPath)) {
+      const target = getSymlinkTarget(systemPath);
+      if (target === repoPath) {
+        return {
+          success: true,
+          message: "Already linked to repo - no export needed",
+          linkedTo: repoPath,
+        };
+      }
+    }
+
     if (exists(systemPath) && !isSymlink(systemPath)) {
       const backupPath = `${systemPath}.backup`;
       if (exists(backupPath)) {

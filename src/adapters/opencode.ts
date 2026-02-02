@@ -96,6 +96,13 @@ export class OpenCodeAdapter implements AgentAdapter {
       };
     }
 
+    if (exists(repoPath)) {
+      return {
+        success: true,
+        message: "Configs already in repo - no import needed",
+      };
+    }
+
     ensureDir(repoPath);
 
     const filesImported: string[] = [];
@@ -129,6 +136,17 @@ export class OpenCodeAdapter implements AgentAdapter {
         success: false,
         message: "OpenCode configs not found in repo",
       };
+    }
+
+    if (isSymlink(systemPath)) {
+      const target = getSymlinkTarget(systemPath);
+      if (target === repoPath) {
+        return {
+          success: true,
+          message: "Already linked to repo - no export needed",
+          linkedTo: contractHome(repoPath),
+        };
+      }
     }
 
     // Backup existing directory if it exists and isn't a symlink

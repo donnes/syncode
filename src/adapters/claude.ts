@@ -2,14 +2,14 @@
  * Claude Code adapter
  */
 
-import { copyFileSync, existsSync, statSync, unlinkSync } from "node:fs";
+import { copyFileSync, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   copyDir,
   ensureDir,
   exists,
   isDirectory,
-  removeDir,
+  isSymlink,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
 import type {
@@ -89,6 +89,10 @@ export class ClaudeAdapter implements AgentAdapter {
 
       if (!existsSync(srcPath)) continue;
 
+      if (isSymlink(srcPath)) continue;
+
+      if (existsSync(destPath)) continue;
+
       if (statSync(srcPath).isDirectory()) {
         copyDir(srcPath, destPath);
         filesImported.push(`${pattern}/`);
@@ -134,14 +138,7 @@ export class ClaudeAdapter implements AgentAdapter {
 
       if (!existsSync(srcPath)) continue;
 
-      // Remove existing and copy fresh
-      if (existsSync(destPath)) {
-        if (statSync(destPath).isDirectory()) {
-          removeDir(destPath);
-        } else {
-          unlinkSync(destPath);
-        }
-      }
+      if (existsSync(destPath)) continue;
 
       if (statSync(srcPath).isDirectory()) {
         copyDir(srcPath, destPath);
