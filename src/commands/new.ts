@@ -11,7 +11,7 @@ import {
   getAgentsWithAdapters,
   usesSharedSkills,
 } from "../agents";
-import { configExists, initConfig } from "../config/manager";
+import { configExists, getConfig, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
 import {
   BREWFILE_TEMPLATE,
@@ -24,13 +24,24 @@ export async function newCommand() {
   p.intro("Initialize Agent Config Repository");
 
   if (configExists()) {
-    const overwrite = await p.confirm({
-      message:
-        "Configuration already exists at ~/.syncode/config.json. Overwrite?",
-      initialValue: false,
+    const existingConfig = getConfig();
+    const overwrite = await p.select({
+      message: `Configuration already exists at ~/.syncode/config.json (current repo: ${contractHome(expandHome(existingConfig.repoPath))}).`,
+      options: [
+        {
+          value: "replace",
+          label: "Replace and continue",
+          hint: "You can choose a new repo path next",
+        },
+        {
+          value: "cancel",
+          label: "Cancel",
+          hint: "Keep current configuration",
+        },
+      ],
     });
 
-    if (p.isCancel(overwrite) || !overwrite) {
+    if (p.isCancel(overwrite) || overwrite !== "replace") {
       p.cancel("Initialization cancelled.");
       return;
     }
