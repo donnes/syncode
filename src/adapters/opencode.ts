@@ -21,6 +21,11 @@ import {
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import {
+  getSharedSkillsPath,
+  getSharedSkillsRepoPath,
+  linkSharedSkillsInRepo,
+} from "./shared-skills";
 import type {
   AgentAdapter,
   CanonicalSkill,
@@ -39,7 +44,7 @@ export class OpenCodeAdapter implements AgentAdapter {
   };
 
   // Files/folders to sync (exclude node_modules, cache, etc.)
-  private syncPatterns = ["opencode.json", "command", "agent", "skill"];
+  private syncPatterns = ["opencode.json", "command", "agent"];
 
   getConfigPath(platform: Platform): string {
     // OpenCode uses XDG on all platforms
@@ -49,8 +54,8 @@ export class OpenCodeAdapter implements AgentAdapter {
     return join(process.env.HOME || "", ".config", "opencode");
   }
 
-  getSkillsPath(platform: Platform): string {
-    return join(this.getConfigPath(platform), "skill");
+  getSkillsPath(_platform: Platform): string {
+    return getSharedSkillsPath();
   }
 
   getRepoPath(repoRoot: string): string {
@@ -165,6 +170,12 @@ export class OpenCodeAdapter implements AgentAdapter {
     // Create symlink
     ensureDir(dirname(systemPath));
     symlinkSync(repoPath, systemPath);
+
+    linkSharedSkillsInRepo(
+      repoPath,
+      getSharedSkillsRepoPath(repoPath),
+      "skill",
+    );
 
     return {
       success: true,

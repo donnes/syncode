@@ -14,6 +14,11 @@ import {
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import {
+  getSharedSkillsPath,
+  getSharedSkillsRepoPath,
+  linkSharedSkillsInRepo,
+} from "./shared-skills";
 import type {
   AgentAdapter,
   ExportResult,
@@ -34,12 +39,16 @@ export class DroidAdapter implements AgentAdapter {
     return join(process.env.HOME || "", ".factory");
   }
 
+  getSkillsPath(_platform: Platform): string {
+    return getSharedSkillsPath();
+  }
+
   getRepoPath(repoRoot: string): string {
     return join(repoRoot, "configs", "droid");
   }
 
   isInstalled(platform: Platform): boolean {
-    return exists(join(this.getConfigPath(platform), "skills"));
+    return exists(this.getConfigPath(platform));
   }
 
   detect(): boolean {
@@ -129,6 +138,8 @@ export class DroidAdapter implements AgentAdapter {
 
     // Create symlink
     createSymlink(repoPath, systemPath);
+
+    linkSharedSkillsInRepo(repoPath, getSharedSkillsRepoPath(repoPath));
 
     return {
       success: true,

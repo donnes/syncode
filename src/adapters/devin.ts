@@ -1,5 +1,5 @@
 /**
- * GitHub Copilot adapter
+ * Devin adapter
  */
 
 import { unlinkSync } from "node:fs";
@@ -26,17 +26,32 @@ import type {
   Platform,
 } from "./types";
 
-export class GithubCopilotAdapter implements AgentAdapter {
-  readonly id = "github-copilot";
-  readonly name = "GitHub Copilot";
+export class DevinAdapter implements AgentAdapter {
+  readonly id = "devin";
+  readonly name = "Devin";
   readonly version = "1.0.0";
   readonly syncStrategy = {
     import: "copy" as const,
     export: "symlink" as const,
   };
 
-  getConfigPath(_platform: Platform): string {
-    return join(process.env.HOME || "", ".copilot");
+  private getConfigPaths(platform: Platform): string[] {
+    if (platform === "windows") {
+      return [join(process.env.APPDATA || "", "devin")];
+    }
+    return [
+      join(process.env.HOME || "", ".devin"),
+      join(process.env.HOME || "", ".config", "devin"),
+    ];
+  }
+
+  getConfigPath(platform: Platform): string {
+    for (const path of this.getConfigPaths(platform)) {
+      if (exists(path)) {
+        return path;
+      }
+    }
+    return this.getConfigPaths(platform)[0]!;
   }
 
   getSkillsPath(_platform: Platform): string {
@@ -44,13 +59,11 @@ export class GithubCopilotAdapter implements AgentAdapter {
   }
 
   getRepoPath(repoRoot: string): string {
-    return join(repoRoot, "configs", "github-copilot");
+    return join(repoRoot, "configs", "devin");
   }
 
   isInstalled(platform: Platform): boolean {
-    const homePath = this.getConfigPath(platform);
-    const projectPath = join(process.cwd(), ".github");
-    return exists(homePath) || exists(projectPath);
+    return this.getConfigPaths(platform).some((path) => exists(path));
   }
 
   detect(): boolean {
@@ -74,7 +87,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
     if (!exists(systemPath)) {
       return {
         success: false,
-        message: "GitHub Copilot config not found on system",
+        message: "Devin config not found on system",
       };
     }
 
@@ -97,7 +110,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
 
     return {
       success: true,
-      message: "Imported GitHub Copilot configs to repo",
+      message: "Imported Devin configs to repo",
     };
   }
 
@@ -105,7 +118,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
     if (!exists(repoPath)) {
       return {
         success: false,
-        message: "GitHub Copilot configs not found in repo",
+        message: "Devin configs not found in repo",
       };
     }
 
@@ -120,12 +133,10 @@ export class GithubCopilotAdapter implements AgentAdapter {
       }
     }
 
-    // Remove existing (symlink or directory)
     if (exists(systemPath)) {
       if (isSymlink(systemPath)) {
         unlinkSync(systemPath);
       } else {
-        // Backup existing config
         const backupPath = `${systemPath}.backup`;
         if (exists(backupPath)) {
           if (isSymlink(backupPath)) {
@@ -138,17 +149,16 @@ export class GithubCopilotAdapter implements AgentAdapter {
       }
     }
 
-    // Create symlink
     createSymlink(repoPath, systemPath);
 
     linkSharedSkillsInRepo(repoPath, getSharedSkillsRepoPath(repoPath));
 
     return {
       success: true,
-      message: `Linked GitHub Copilot configs to ${contractHome(systemPath)}`,
+      message: `Linked Devin configs to ${contractHome(systemPath)}`,
       linkedTo: repoPath,
     };
   }
 }
 
-export const githubCopilotAdapter = new GithubCopilotAdapter();
+export const devinAdapter = new DevinAdapter();

@@ -8,3 +8,9 @@ export {
   getAllAgentIds,
   isAgentInstalled,
 } from "./metadata";
+export {
+  ensureSharedSkillsAgent,
+  SHARED_SKILLS_AGENT_ID,
+  sortSharedSkillsFirst,
+  usesSharedSkills,
+} from "./shared-skills";

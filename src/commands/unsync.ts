@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import * as p from "@clack/prompts";
 import { adapterRegistry } from "../adapters/registry";
 import type { Platform } from "../adapters/types";
+import { ensureSharedSkillsAgent, usesSharedSkills } from "../agents";
 import { getConfig } from "../config/manager";
 import type { GlobalConfig } from "../config/types";
 import {
@@ -82,6 +83,16 @@ export async function unsyncCommand() {
     return;
   }
 
+  let agentsToUnsync = config.agents;
+  const expandedAgents = ensureSharedSkillsAgent(agentsToUnsync);
+  if (
+    expandedAgents.length > agentsToUnsync.length &&
+    agentsToUnsync.some(usesSharedSkills)
+  ) {
+    p.log.info("Including Shared Agents (.agents) for shared skills");
+  }
+  agentsToUnsync = expandedAgents;
+
   const platform: Platform =
     process.platform === "darwin"
       ? "macos"
@@ -97,7 +108,7 @@ export async function unsyncCommand() {
   const s = p.spinner();
   s.start("Removing config symlinks");
 
-  for (const agentId of config.agents) {
+  for (const agentId of agentsToUnsync) {
     const adapter = adapterRegistry.get(agentId);
     if (!adapter) {
       s.message(`Warning: Adapter not found for ${agentId}`);

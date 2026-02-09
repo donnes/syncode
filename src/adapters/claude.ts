@@ -12,6 +12,7 @@ import {
   isSymlink,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import { getSharedSkillsPath, linkSharedSkillsOnSystem } from "./shared-skills";
 import type {
   AgentAdapter,
   CanonicalSkill,
@@ -30,7 +31,7 @@ export class ClaudeAdapter implements AgentAdapter {
   };
 
   // Files/folders to sync (exclude cache, history, etc.)
-  private syncPatterns = ["settings.json", "CLAUDE.md", "commands", "skills"];
+  private syncPatterns = ["settings.json", "CLAUDE.md", "commands"];
 
   getConfigPath(platform: Platform): string {
     if (platform === "windows") {
@@ -39,8 +40,8 @@ export class ClaudeAdapter implements AgentAdapter {
     return join(process.env.HOME || "", ".claude");
   }
 
-  getSkillsPath(platform: Platform): string {
-    return join(this.getConfigPath(platform), "skills");
+  getSkillsPath(_platform: Platform): string {
+    return getSharedSkillsPath();
   }
 
   getRepoPath(repoRoot: string): string {
@@ -107,7 +108,7 @@ export class ClaudeAdapter implements AgentAdapter {
       return {
         success: true,
         message:
-          "No Claude configs found to import (settings.json, CLAUDE.md, commands/, skills/)",
+          "No Claude configs found to import (settings.json, CLAUDE.md, commands/)",
       };
     }
 
@@ -149,6 +150,8 @@ export class ClaudeAdapter implements AgentAdapter {
         filesExported.push(pattern);
       }
     }
+
+    linkSharedSkillsOnSystem(join(systemPath, "skills"));
 
     return {
       success: true,

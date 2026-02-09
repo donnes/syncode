@@ -6,10 +6,12 @@ import { adapterRegistry } from "../adapters/registry";
 import type { Platform } from "../adapters/types";
 import {
   detectInstalledAgents,
+  ensureSharedSkillsAgent,
   getAgentMetadata,
   getAgentsWithAdapters,
+  usesSharedSkills,
 } from "../agents";
-import { configExists, initConfig } from "../config/manager";
+import { configExists, getConfig, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
 import {
   BREWFILE_TEMPLATE,
@@ -22,13 +24,24 @@ export async function newCommand() {
   p.intro("Initialize Agent Config Repository");
 
   if (configExists()) {
-    const overwrite = await p.confirm({
-      message:
-        "Configuration already exists at ~/.syncode/config.json. Overwrite?",
-      initialValue: false,
+    const existingConfig = getConfig();
+    const overwrite = await p.select({
+      message: `Configuration already exists at ~/.syncode/config.json (current repo: ${contractHome(expandHome(existingConfig.repoPath))}).`,
+      options: [
+        {
+          value: "replace",
+          label: "Replace and continue",
+          hint: "You can choose a new repo path next",
+        },
+        {
+          value: "cancel",
+          label: "Cancel",
+          hint: "Keep current configuration",
+        },
+      ],
     });
 
-    if (p.isCancel(overwrite) || !overwrite) {
+    if (p.isCancel(overwrite) || overwrite !== "replace") {
       p.cancel("Initialization cancelled.");
       return;
     }
@@ -154,7 +167,15 @@ export async function newCommand() {
     return;
   }
 
-  const selectedAgents = agentsInput as string[];
+  let selectedAgents = agentsInput as string[];
+  const expandedAgents = ensureSharedSkillsAgent(selectedAgents);
+  if (
+    expandedAgents.length > selectedAgents.length &&
+    selectedAgents.some(usesSharedSkills)
+  ) {
+    p.log.info("Including Shared Agents (.agents) for shared skills");
+  }
+  selectedAgents = expandedAgents;
 
   if (selectedAgents.length === 0) {
     p.log.warn(
@@ -192,6 +213,10 @@ export async function newCommand() {
   try {
     const configsDir = join(repoPath, "configs");
     mkdirSync(configsDir, { recursive: true });
+
+    if (selectedAgents.includes("agents")) {
+      mkdirSync(join(repoPath, ".agents", "skills"), { recursive: true });
+    }
 
     const templateFiles = [
       {

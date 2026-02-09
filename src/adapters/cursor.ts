@@ -21,6 +21,7 @@ import {
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import { getSharedSkillsPath, linkSharedSkillsOnSystem } from "./shared-skills";
 import type {
   AgentAdapter,
   CanonicalSkill,
@@ -61,6 +62,10 @@ export class CursorAdapter implements AgentAdapter {
       // Windows
       return join(process.env.APPDATA || "", "Cursor", "User");
     }
+  }
+
+  getSkillsPath(_platform: Platform): string {
+    return getSharedSkillsPath();
   }
 
   getRepoPath(repoRoot: string): string {
@@ -136,6 +141,8 @@ export class CursorAdapter implements AgentAdapter {
         message: "No Cursor configs found to import",
       };
     }
+
+    linkSharedSkillsOnSystem(join(systemPath, "skills"));
 
     return {
       success: true,

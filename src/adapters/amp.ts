@@ -14,6 +14,11 @@ import {
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
+import {
+  getSharedSkillsPath,
+  getSharedSkillsRepoPath,
+  linkSharedSkillsInRepo,
+} from "./shared-skills";
 import type {
   AgentAdapter,
   ExportResult,
@@ -32,6 +37,10 @@ export class AmpAdapter implements AgentAdapter {
 
   getConfigPath(_platform: Platform): string {
     return join(process.env.HOME || "", ".config/amp");
+  }
+
+  getSkillsPath(_platform: Platform): string {
+    return getSharedSkillsPath();
   }
 
   getRepoPath(repoRoot: string): string {
@@ -129,6 +138,8 @@ export class AmpAdapter implements AgentAdapter {
 
     // Create symlink
     createSymlink(repoPath, systemPath);
+
+    linkSharedSkillsInRepo(repoPath, getSharedSkillsRepoPath(repoPath));
 
     return {
       success: true,
