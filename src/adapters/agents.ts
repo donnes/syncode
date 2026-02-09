@@ -1,5 +1,5 @@
 /**
- * GitHub Copilot adapter
+ * Shared Agents adapter
  */
 
 import { unlinkSync } from "node:fs";
@@ -14,11 +14,6 @@ import {
   removeDir,
 } from "../utils/fs";
 import { contractHome } from "../utils/paths";
-import {
-  getSharedSkillsPath,
-  getSharedSkillsRepoPath,
-  linkSharedSkillsInRepo,
-} from "./shared-skills";
 import type {
   AgentAdapter,
   ExportResult,
@@ -26,9 +21,9 @@ import type {
   Platform,
 } from "./types";
 
-export class GithubCopilotAdapter implements AgentAdapter {
-  readonly id = "github-copilot";
-  readonly name = "GitHub Copilot";
+export class AgentsAdapter implements AgentAdapter {
+  readonly id = "agents";
+  readonly name = "Shared Agents";
   readonly version = "1.0.0";
   readonly syncStrategy = {
     import: "copy" as const,
@@ -36,21 +31,19 @@ export class GithubCopilotAdapter implements AgentAdapter {
   };
 
   getConfigPath(_platform: Platform): string {
-    return join(process.env.HOME || "", ".copilot");
-  }
-
-  getSkillsPath(_platform: Platform): string {
-    return getSharedSkillsPath();
+    return join(process.env.HOME || "", ".agents");
   }
 
   getRepoPath(repoRoot: string): string {
-    return join(repoRoot, "configs", "github-copilot");
+    return join(repoRoot, ".agents");
+  }
+
+  getSkillsPath(_platform: Platform): string {
+    return join(this.getConfigPath(_platform), "skills");
   }
 
   isInstalled(platform: Platform): boolean {
-    const homePath = this.getConfigPath(platform);
-    const projectPath = join(process.cwd(), ".github");
-    return exists(homePath) || exists(projectPath);
+    return exists(this.getConfigPath(platform));
   }
 
   detect(): boolean {
@@ -74,7 +67,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
     if (!exists(systemPath)) {
       return {
         success: false,
-        message: "GitHub Copilot config not found on system",
+        message: "Shared agents config not found on system",
       };
     }
 
@@ -97,7 +90,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
 
     return {
       success: true,
-      message: "Imported GitHub Copilot configs to repo",
+      message: "Imported shared agents configs to repo",
     };
   }
 
@@ -105,9 +98,11 @@ export class GithubCopilotAdapter implements AgentAdapter {
     if (!exists(repoPath)) {
       return {
         success: false,
-        message: "GitHub Copilot configs not found in repo",
+        message: "Shared agents configs not found in repo",
       };
     }
+
+    ensureDir(join(repoPath, "skills"));
 
     if (isSymlink(systemPath)) {
       const target = getSymlinkTarget(systemPath);
@@ -120,12 +115,10 @@ export class GithubCopilotAdapter implements AgentAdapter {
       }
     }
 
-    // Remove existing (symlink or directory)
     if (exists(systemPath)) {
       if (isSymlink(systemPath)) {
         unlinkSync(systemPath);
       } else {
-        // Backup existing config
         const backupPath = `${systemPath}.backup`;
         if (exists(backupPath)) {
           if (isSymlink(backupPath)) {
@@ -138,17 +131,14 @@ export class GithubCopilotAdapter implements AgentAdapter {
       }
     }
 
-    // Create symlink
     createSymlink(repoPath, systemPath);
-
-    linkSharedSkillsInRepo(repoPath, getSharedSkillsRepoPath(repoPath));
 
     return {
       success: true,
-      message: `Linked GitHub Copilot configs to ${contractHome(systemPath)}`,
+      message: `Linked shared agents configs to ${contractHome(systemPath)}`,
       linkedTo: repoPath,
     };
   }
 }
 
-export const githubCopilotAdapter = new GithubCopilotAdapter();
+export const agentsAdapter = new AgentsAdapter();

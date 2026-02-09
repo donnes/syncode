@@ -6,8 +6,10 @@ import { adapterRegistry } from "../adapters/registry";
 import type { Platform } from "../adapters/types";
 import {
   detectInstalledAgents,
+  ensureSharedSkillsAgent,
   getAgentMetadata,
   getAgentsWithAdapters,
+  usesSharedSkills,
 } from "../agents";
 import { configExists, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
@@ -147,7 +149,15 @@ export async function initCommand() {
     return;
   }
 
-  const selectedAgents = agentsInput as string[];
+  let selectedAgents = agentsInput as string[];
+  const expandedAgents = ensureSharedSkillsAgent(selectedAgents);
+  if (
+    expandedAgents.length > selectedAgents.length &&
+    selectedAgents.some(usesSharedSkills)
+  ) {
+    p.log.info("Including Shared Agents (.agents) for shared skills");
+  }
+  selectedAgents = expandedAgents;
 
   if (selectedAgents.length === 0) {
     p.log.warn(

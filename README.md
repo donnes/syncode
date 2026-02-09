@@ -188,6 +188,8 @@ Global configuration is stored at `~/.syncode/config.json`:
 ├── packages-arch.txt
 ├── packages-debian.txt
 ├── README.md
+├── .agents/            # Shared skills (symlinked)
+│   └── skills/
 └── configs/
     ├── amp/               # Symlinked
     ├── antigravity/       # Copy sync
@@ -215,7 +217,7 @@ Global configuration is stored at `~/.syncode/config.json`:
 ```bash
 # Edit your AI agent configs normally
 # Example: ~/.config/opencode/opencode.json
-# Example: ~/.claude/skills/my-helper.md
+# Example: ~/.agents/skills/my-helper.md
 # Changes are synced via symlinks automatically
 
 # Check what changed
