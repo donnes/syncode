@@ -5,6 +5,11 @@
 import * as p from "@clack/prompts";
 import { adapterRegistry } from "../adapters/registry";
 import type { Platform } from "../adapters/types";
+import {
+  ensureSharedSkillsAgent,
+  sortSharedSkillsFirst,
+  usesSharedSkills,
+} from "../agents";
 import { getConfig } from "../config/manager";
 import { checkAndMigrateConfig } from "../config/migrations";
 import type { GlobalConfig } from "../config/types";
@@ -99,14 +104,28 @@ export async function syncCommand() {
     }
   }
 
-  if ((selectedAgents as string[]).length === 0) {
+  let resolvedAgents = selectedAgents as string[];
+  if (resolvedAgents.length === 0) {
     p.cancel("No agents selected");
     return;
   }
 
+  const expandedAgents = ensureSharedSkillsAgent(resolvedAgents);
+  if (
+    expandedAgents.length > resolvedAgents.length &&
+    resolvedAgents.some(usesSharedSkills)
+  ) {
+    p.log.info("Including Shared Agents (.agents) for shared skills");
+  }
+
+  resolvedAgents =
+    direction === "export"
+      ? sortSharedSkillsFirst(expandedAgents)
+      : expandedAgents;
+
   const s = p.spinner();
   s.start(
-    `${direction === "import" ? "Importing" : "Exporting"} ${(selectedAgents as string[]).length} agent(s)`,
+    `${direction === "import" ? "Importing" : "Exporting"} ${resolvedAgents.length} agent(s)`,
   );
 
   const repoPath = config.repoPath.startsWith("~")
@@ -117,7 +136,7 @@ export async function syncCommand() {
   let failCount = 0;
   const errors: Array<{ agent: string; error: string }> = [];
 
-  for (const agentId of selectedAgents as string[]) {
+  for (const agentId of resolvedAgents) {
     const adapter = adapterRegistry.get(agentId);
     if (!adapter) {
       const errorMsg = "Adapter not found";

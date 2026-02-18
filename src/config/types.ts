@@ -57,18 +57,21 @@ export const DEFAULT_CONFIG: GlobalConfig = {
 };
 
 export const SUPPORTED_AGENTS = [
+  "agents",
   "amp",
   "antigravity",
   "claude",
   "clawdbot",
   "codex",
   "cursor",
+  "devin",
   "dotfiles",
   "droid",
   "gemini-cli",
   "github-copilot",
   "goose",
   "kilo",
+  "kimi-cli",
   "kiro-cli",
   "opencode",
   "roo",

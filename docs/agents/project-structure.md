@@ -7,3 +7,4 @@
 - `src/config/`: Configuration management (manager.ts, types.ts).
 - `src/utils/`: Shared helpers (fs, git, paths, shell, platform).
 - `configs/`: In the user's repo, stores tracked agent configs.
+- `.agents/`: In the user's repo, stores shared skills (symlinked).

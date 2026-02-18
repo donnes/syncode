@@ -15,6 +15,14 @@ export interface AgentMetadata {
 const home = homedir();
 
 export const agentMetadata: Record<string, AgentMetadata> = {
+  agents: {
+    id: "agents",
+    displayName: "Shared Agents",
+    configDir: join(home, ".agents"),
+    detectInstalled: () => existsSync(join(home, ".agents")),
+    hasAdapter: true,
+  },
+
   amp: {
     id: "amp",
     displayName: "Amp",
@@ -94,11 +102,23 @@ export const agentMetadata: Record<string, AgentMetadata> = {
     hasAdapter: true,
   },
 
+  devin: {
+    id: "devin",
+    displayName: "Devin",
+    configDir: join(home, ".devin"),
+    detectInstalled: () =>
+      existsSync(join(home, ".devin")) ||
+      existsSync(join(home, ".config/devin")),
+    hasAdapter: true,
+  },
+
   droid: {
     id: "droid",
     displayName: "Droid",
     configDir: join(home, ".factory"),
-    detectInstalled: () => existsSync(join(home, ".factory/skills")),
+    detectInstalled: () =>
+      existsSync(join(home, ".factory")) ||
+      existsSync(join(home, ".agents/skills")),
     hasAdapter: true,
   },
 
@@ -136,6 +156,15 @@ export const agentMetadata: Record<string, AgentMetadata> = {
     hasAdapter: true,
   },
 
+  "kimi-cli": {
+    id: "kimi-cli",
+    displayName: "Kimi CLI",
+    configDir: join(home, ".kimi"),
+    detectInstalled: () =>
+      existsSync(join(home, ".kimi")) || existsSync(join(home, ".config/kimi")),
+    hasAdapter: true,
+  },
+
   "kiro-cli": {
     id: "kiro-cli",
     displayName: "Kiro CLI",
@@ -150,7 +179,7 @@ export const agentMetadata: Record<string, AgentMetadata> = {
     configDir: join(home, ".config/opencode"),
     detectInstalled: () =>
       existsSync(join(home, ".config/opencode")) ||
-      existsSync(join(home, ".claude/skills")),
+      existsSync(join(home, ".agents/skills")),
     hasAdapter: true,
   },
 
