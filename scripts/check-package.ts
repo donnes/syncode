@@ -36,7 +36,13 @@ function parsePack(value: unknown): { filename: string; files: string[] } {
 
 function run(command: string, args: string[], env: NodeJS.ProcessEnv = process.env) {
   const result = spawnSync(command, args, { cwd: root, encoding: "utf8", env });
-  return { status: result.status, output: `${result.stdout}${result.stderr}`.trim() };
+  // Keep stdout separate: npm prints config warnings on stderr, which would
+  // break parsing its --json output.
+  return {
+    status: result.status,
+    stdout: result.stdout.trim(),
+    output: `${result.stdout}${result.stderr}`.trim(),
+  };
 }
 
 function expect(condition: boolean, message: string, output: string) {
@@ -52,7 +58,7 @@ fs.mkdirSync(scratch, { recursive: true });
 
 const pack = run("npm", ["pack", "--pack-destination", scratch, "--json"]);
 expect(pack.status === 0, "npm pack", pack.output);
-const packed = parsePack(JSON.parse(pack.output));
+const packed = parsePack(JSON.parse(pack.stdout));
 const files = packed.files.toSorted();
 expect(
   files.join(",") === "LICENSE,README.md,dist/index.mjs,package.json",
@@ -79,7 +85,7 @@ const env = { PATH: process.env.PATH, HOME: home };
 
 const version = run(bin, ["--version"], env);
 expect(
-  version.output === pkg.version,
+  version.stdout === pkg.version,
   `syncode --version prints ${String(pkg.version)}`,
   version.output,
 );
