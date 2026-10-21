@@ -35,3 +35,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Local scratch (test sandboxes)
+.scratch/

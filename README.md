@@ -1,333 +1,96 @@
-# syncode - Agent Configuration Manager
+# syncode
 
-[![npm version](https://badge.fury.io/js/%40donnes%2Fsyncode.svg)](https://www.npmjs.com/package/@donnes/syncode)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@donnes/syncode)](https://www.npmjs.com/package/@donnes/syncode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Stop fighting with AI agent configurations.** Sync your Claude Code, Cursor, Windsurf, OpenCode, and VSCode settings across machines and projects with a single command.
+Keep your AI coding agents' instructions, skills and config files in one git repo, and link them into every agent on every machine.
+- **One set of instructions** for Claude Code (`CLAUDE.md`), Codex and OpenCode (`AGENTS.md`) and Gemini CLI (`GEMINI.md`), with optional per-OS and per-machine parts.
+- **One skills folder** linked into `~/.agents/skills` (Codex, OpenCode, Gemini CLI, Cursor, Copilot CLI) and `~/.claude/skills`.
+- **Only what you choose.** Config files are synced only after you `adopt` them, and credentials like `auth.json` are refused, so sessions, caches and tokens never reach git.
+- **Safe to rerun.** `apply` is idempotent, `status` previews it exactly, and differing local files are never overwritten without asking.
 
-The era of AI-powered coding is here, but managing multiple AI assistants is a mess. `syncode` solves this.
-
-## Why syncode?
-
-**The Problem:** You use Cursor at work, Claude Code for side projects, and want to try Windsurf or Roo Code. Each has its own config format and setup. Keeping 17+ AI agents in sync is manual hell.
-
-**The Solution:** `syncode` is your single source of truth for AI agent configurations.
-
-<img width="770" height="628" alt="image" src="https://github.com/user-attachments/assets/6dc2851c-3b0c-4fba-9d34-5728d055c6a3" />
-
-## Features
-
-- 🤖 **17+ AI Agents** - Claude Code, Cursor, Windsurf, OpenCode, VSCode, GitHub Copilot, Roo Code, Goose, Gemini CLI, Amp, Kilo Code, Kiro CLI, Trae, Codex, Antigravity, Clawdbot, Droid
-- 🔄 **Smart Sync** - Automatic detection and sync with smart defaults per agent
-- 🔗 **Symlinks & Copy** - Symlinks for live sync, copy for Claude (preserves cache)
-- 📦 **Version Control** - Git-based workflow for your AI configurations
-- 🛡️ **Safe Operations** - Automatic backups before any changes
-- 🖥️ **Machine Setup** - Opinionated development dependencies for macOS/Linux
-- 🌍 **Cross-Platform** - macOS, Linux (Windows coming soon)
-
-## Quick Start
-
-### Option 1: npx (No Install Required)
+## Quick start
 
 ```bash
-npx @donnes/syncode new
-```
+npm install -g @donnes/syncode   # or: bun add -g @donnes/syncode
 
-### Already Have a Repo?
-
-```bash
+# First machine: start a repo from the instructions and skills you already have
 syncode init
+
+# Other machines: clone your repo and link it
+syncode init git@github.com:<you>/agent-configs.git
 ```
 
-### Option 2: Global Install
-
-```bash
-# Install globally
-npm install -g @donnes/syncode
-
-# Or using bun
-bun install -g @donnes/syncode
-
-# Initialize
-syncode new
-```
-
-## Usage
-
-### Initialize a New Repo
-
-```bash
-syncode new
-```
-
-This will:
-- Auto-detect installed AI agents (17+ agents supported)
-- Let you select which agents to sync
-- Create a git repository for your configs
-- Import your existing configs
-- Set up smart sync defaults (symlinks for most, copy for Claude, Gemini, etc.)
-
-### Initialize from an Existing Repo
-
-```bash
-syncode init
-```
-
-This will:
-- Prompt for the repo URL and local storage path
-- Clone the repo if needed
-- Let you choose which agents to sync
-- Save configuration to `~/.syncode/config.json`
-
-### Sync Agents Config
-
-```bash
-syncode sync
-```
-
-Choose direction:
-- **Import**: Copy configs from system to repo (before committing changes)
-- **Export**: Sync configs from repo to system (on new machines)
-
-### Check Status
-
-```bash
-syncode status
-```
-
-Shows:
-- Which agents are synced
-- Sync method (symlink vs copy)
-- Git status
-- Option to run full machine status
-
-### Machine Dependencies
-
-```bash
-syncode machine deps
-```
-
-Install opinionated development dependencies for your machine:
-- **Unified script**: `install.sh` with curl-based installs where possible
-- **Curl-installed**: bun, fnm, uv, atuin, zoxide, fzf, opencode
-- **Package manager fallback**: ripgrep, fd, eza, gh, lazygit, go, rbenv, biome, aws-cli, bob
-- **macOS only**: OrbStack, Raycast, opencode-desktop (via Homebrew casks)
-
-This is a boilerplate file that gets copied to your repo root during `syncode new`. Edit it to customize the tools for your workflow.
-
-### Machine Status
-
-```bash
-syncode machine status
-```
-
-Shows comprehensive machine setup status:
-- Platform and package manager detection
-- Repository and git status
-- Dependency file presence
-- Quick health check for your development environment
-
-### Push to Remote
-
-```bash
-syncode push
-```
-
-Push your config changes to the remote repository:
-- Detects uncommitted changes
-- Optionally commits changes with a message
-- Pushes to the configured remote branch
-
-## Supported Agents
-
-| Agent | Config Path | Sync Method | Auto-Detect |
-|-------|-------------|-------------|-------------|
-| **Amp** | `~/.config/amp` | Symlink | ✅ Yes |
-| **Antigravity** | `~/.gemini/antigravity` | Copy | ✅ Yes |
-| **Claude Code** | `~/.claude` | Copy | ✅ Yes |
-| **Clawdbot** | `~/.clawdbot` | Symlink | ✅ Yes |
-| **Codex** | `~/.codex` | Symlink | ✅ Yes |
-| **Cursor** | `~/Library/Application Support/Cursor/User` | Symlink | ✅ Yes |
-| **Droid** | `~/.factory` | Symlink | ✅ Yes |
-| **Gemini CLI** | `~/.gemini` | Copy | ✅ Yes |
-| **GitHub Copilot** | `~/.copilot` | Copy | ✅ Yes |
-| **Goose** | `~/.config/goose` | Symlink | ✅ Yes |
-| **Kilo Code** | `~/.kilocode` | Symlink | ✅ Yes |
-| **Kiro CLI** | `~/.kiro` | Symlink | ✅ Yes |
-| **OpenCode** | `~/.config/opencode` | Symlink | ✅ Yes |
-| **Roo Code** | `~/.roo` | Symlink | ✅ Yes |
-| **Trae** | `~/.trae` | Symlink | ✅ Yes |
-| **VSCode** | `~/Library/Application Support/Code/User` | Symlink | ✅ Yes |
-| **Windsurf** | `~/.codeium/windsurf` | Symlink | ✅ Yes |
-
-## Configuration
-
-Global configuration is stored at `~/.syncode/config.json`:
-
-```json
-{
-  "version": "1.0.0",
-  "repoPath": "~/.syncode/repo",
-  "remote": "https://github.com/<username>/configs.git",
-  "agents": ["opencode", "claude", "cursor", "windsurf"],
-  "features": {
-    "autoSync": false,
-    "backupBeforeExport": true,
-    "smartSyncDefaults": true
-  }
-}
-```
-
-## Repository Structure
-
-```
-~/.syncode/repo/
-├── .git/
-├── .gitignore
-├── install.sh
-├── README.md
-├── .agents/            # Shared skills (symlinked)
-│   └── skills/
-└── configs/
-    ├── amp/               # Symlinked
-    ├── antigravity/       # Copy sync
-    ├── claude/            # Copy sync (preserves cache)
-    ├── clawdbot/          # Symlinked
-    ├── codex/             # Symlinked
-    ├── cursor/            # Symlinked
-    ├── droid/             # Symlinked
-    ├── gemini-cli/        # Copy sync
-    ├── github-copilot/    # Copy sync
-    ├── goose/             # Symlinked
-    ├── kilo/              # Symlinked
-    ├── kiro-cli/          # Symlinked
-    ├── opencode/          # Symlinked
-    ├── roo/               # Symlinked
-    ├── trae/              # Symlinked
-    ├── vscode/            # Symlinked
-    └── windsurf/          # Symlinked
-```
-
-## Usage Examples
-
-### Daily Workflow
-
-```bash
-# Edit your AI agent configs normally
-# Example: ~/.config/opencode/opencode.json
-# Example: ~/.agents/skills/my-helper.md
-# Changes are synced via symlinks automatically
-
-# Check what changed
-syncode status
-
-# Import changes to repo
-syncode sync
-# Select "Import"
-
-# Push to remote (commits and pushes in one command)
-syncode push
-
-# Pull changes from remote
-syncode pull
-```
+Requires Node.js 22.12 or later, git, and macOS or Linux.
 
 ## Commands
 
-- `syncode new` - Initialize a new agent config repository
-- `syncode init` - Initialize from an existing agent config repository
-- `syncode sync` - Sync agent configs (import or export)
-- `syncode status` - Show status of synced agents
-- `syncode push` - Push config changes to git remote
-- `syncode pull` - Pull config changes from git remote
-- `syncode machine deps` - Install machine dependencies (install.sh)
-- `syncode machine status` - Show full machine setup status
-- `syncode --version` - Show version
-- `syncode help` - Show help message
+| Command                   | What it does                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `syncode init [repo]`     | Set up this machine from a git URL or local path, or start a new repo. Migrates a 1.x setup.       |
+| `syncode apply`           | Link the repo's instructions, skills and config files into each agent.                             |
+| `syncode status`          | Show what `apply` would change, plus uncommitted repo changes. `--json` for scripts.               |
+| `syncode adopt <path>...` | Move a local config file or skill folder into the repo and link it back.                           |
+| `syncode pull`            | `git pull --ff-only`, then `apply`.                                                                |
+| `syncode push`            | Commit any repo changes (`-m` for the message) and push.                                           |
+| `syncode unlink`          | Replace every link with a copy of its file, so you can stop using syncode without losing anything. |
+
+`apply` and `unlink` accept `--dry-run`. `init` accepts `--agents claude,codex` to skip the agent picker.
+
+## Repository layout
+
+```
+~/.syncode/repo/
+├── instructions/
+│   ├── AGENTS.md      # shared instructions
+│   ├── macos.md       # optional, macOS only
+│   ├── linux.md       # optional, Linux only
+│   └── local.md       # optional, this machine only (git-ignored)
+├── skills/
+│   └── <name>/SKILL.md
+└── agents/
+    ├── claude/settings.json   # linked to ~/.claude/settings.json
+    └── codex/config.toml      # linked to ~/.codex/config.toml
+```
+
+When `instructions/AGENTS.md` is the only part, every agent links straight to it, so edits made through any agent land in the repo. When there are OS or local parts, syncode composes them into a read-only `.generated/AGENTS.md`. Edit the parts and rerun `syncode apply`.
+
+## Supported agents
+
+| Agent              | Config folder                       | Instructions               | Skills             |
+| ------------------ | ----------------------------------- | -------------------------- | ------------------ |
+| Claude Code        | `$CLAUDE_CONFIG_DIR` or `~/.claude` | `CLAUDE.md`                | `~/.claude/skills` |
+| Codex              | `$CODEX_HOME` or `~/.codex`         | `AGENTS.md`                | `~/.agents/skills` |
+| OpenCode           | `~/.config/opencode`                | `AGENTS.md`                | `~/.agents/skills` |
+| Gemini CLI         | `~/.gemini`                         | `GEMINI.md`                | `~/.agents/skills` |
+| Cursor             | `~/.cursor`                         | (set in Cursor's settings) | `~/.agents/skills` |
+| GitHub Copilot CLI | `~/.copilot`                        | none                       | `~/.agents/skills` |
+
+Any file under an agent's config folder can be adopted into `agents/<id>/`.
+
+## Conflicts
+
+If a local file differs from the repo copy, `apply` asks whether to keep it, replace it, update the repo from it, or show the diff. It suggests whichever side is newer. Replaced files are backed up to `~/.syncode/backups/`. Outside a terminal (for example over SSH, or when an agent runs syncode), it keeps the local file and reports it.
+
+## Upgrading from 1.x
+
+Run `syncode init`. It detects the 1.x config and:
+1. Replaces the 1.x whole-folder symlinks (such as `~/.config/opencode`) with real copies, so every agent keeps working.
+2. Moves `.agents/skills/*` to `skills/`, and takes the first `AGENTS.md` or `CLAUDE.md` it finds in `configs/` as `instructions/AGENTS.md`.
+3. Links everything the 2.0 way.
+
+The 1.x `configs/` folder stays in the repo. `syncode adopt` the files you want to keep syncing, then delete `configs/` and `.agents/` and commit. `syncode machine` and dotfiles syncing were removed in 2.0.
 
 ## Development
 
-### Building from Source
-
 ```bash
-# Clone the repository
-git clone https://github.com/donnes/syncode.git
-cd syncode
-
-# Install dependencies
 bun install
-
-# Run in development mode
-bun run dev
-
-# Build for production
-bun run build
-
-# Link locally
-bun link
+bun run dev -- status   # run from source (Node >= 22.18)
+bun run check           # lint, typecheck, test, build
 ```
 
-### Running Tests
-
-```bash
-# Type check
-bun run typecheck
-
-# Build
-bun run build
-```
-
-## Platform Support
-
-| Platform | Status | Notes |
-|----------|--------|-------|
-| macOS | ✅ Fully Supported | Primary development platform |
-| Linux | ✅ Fully Supported | Tested on Ubuntu, Arch |
-| Windows | 🚧 Planned | Coming soon |
-
-## Requirements
-
-- Node.js >= 20.0.0 or Bun >= 1.0.0
-- Git (for repository management)
-- macOS or Linux
-
-## Troubleshooting
-
-### Configuration not found
-
-```bash
-# Run initialization
-syncode new
-# Or connect to an existing repo
-syncode init
-```
-
-### Symlinks not working
-
-```bash
-# Check configuration health
-syncode status
-
-# Re-export configs
-syncode sync
-# Select "Export"
-```
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+See [AGENTS.md](AGENTS.md) for how the code is organized.
 
 ## License
 
 MIT © Donald Silveira
-
-## Support
-
-- 📖 [Documentation](https://github.com/donnes/syncode#readme)
-- 🐛 [Report Issues](https://github.com/donnes/syncode/issues)
-- 💬 [Discussions](https://github.com/donnes/syncode/discussions)
-- 📦 [npm Package](https://www.npmjs.com/package/@donnes/syncode)
-
----
-
-**Made with ❤️ for developers**

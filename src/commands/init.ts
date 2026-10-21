@@ -1,226 +1,168 @@
-import { execSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as p from "@clack/prompts";
-import { adapterRegistry } from "../adapters/registry";
-import type { Platform } from "../adapters/types";
-import {
-  detectInstalledAgents,
-  ensureSharedSkillsAgent,
-  getAgentMetadata,
-  getAgentsWithAdapters,
-  usesSharedSkills,
-} from "../agents";
-import { configExists, initConfig } from "../config/manager";
-import { SUPPORTED_AGENTS } from "../config/types";
-import { contractHome, expandHome } from "../utils/paths";
-import { getErrorLogFile, logError } from "../utils/trace";
+import { AGENTS, type AgentId, detectAgents, isAgentId, sharedSkillsDir } from "../agents.ts";
+import { type Config, defaultRepo, readConfig, writeConfig } from "../config.ts";
+import { UserError } from "../errors.ts";
+import { children, exists, Files, linkTarget, prettyPath, writeAtomic } from "../files.ts";
+import { git } from "../git.ts";
+import { expandHome } from "../paths.ts";
+import { apply, enabledAgents, GITIGNORE_LINES, repoPaths } from "../plan.ts";
+import { answer, canPrompt } from "../prompts.ts";
+import { adopt } from "./adopt.ts";
+import { migrate } from "./migrate.ts";
 
-export async function initCommand() {
-  p.intro("Initialize from Existing Repo");
+const README = `# Agent configs
 
-  if (configExists()) {
-    const overwrite = await p.confirm({
-      message:
-        "Configuration already exists at ~/.syncode/config.json. Overwrite?",
-      initialValue: false,
-    });
+Managed by [syncode](https://github.com/donnes/syncode).
 
-    if (p.isCancel(overwrite) || !overwrite) {
-      p.cancel("Initialization cancelled.");
-      return;
-    }
+- \`instructions/AGENTS.md\`: global instructions, linked as each agent's CLAUDE.md, AGENTS.md or GEMINI.md.
+  Add \`macos.md\` or \`linux.md\` for OS-specific parts, and an untracked \`local.md\` for this machine only.
+- \`skills/<name>/\`: skills, linked into \`~/.agents/skills\` and \`~/.claude/skills\`.
+- \`agents/<agent>/\`: other config files, linked into that agent's config folder.
+
+Run \`syncode adopt <path>\` to add files, and \`syncode apply\` after pulling changes.
+`;
+
+const STARTER_INSTRUCTIONS = `# Global agent instructions
+
+Write instructions here that every coding agent should follow on every machine.
+`;
+
+function isGitUrl(source: string): boolean {
+  return /^(https?|ssh|git):\/\//.test(source) || /^[\w.-]+@[\w.-]+:/.test(source);
+}
+
+export function parseAgents(list: string): AgentId[] {
+  const ids = list
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const unknown = ids.filter((id) => !isAgentId(id));
+  if (unknown.length) {
+    throw new UserError(
+      `Unknown agent(s): ${unknown.join(", ")}. Supported: ${AGENTS.map((agent) => agent.id).join(", ")}.`,
+    );
   }
+  return ids.filter(isAgentId);
+}
 
-  const repoUrlInput = await p.text({
-    message: "Repository URL",
-    placeholder: "https://github.com/<username>/configs.git",
-    validate: (value) => {
-      if (!value) return "Repository URL is required";
-      return undefined;
-    },
-  });
+async function chooseAgents(flag: string | undefined, current: AgentId[] | undefined) {
+  if (flag !== undefined) return parseAgents(flag);
+  const detected = detectAgents();
+  if (!canPrompt()) return current ?? detected;
+  return answer(
+    await p.multiselect<AgentId>({
+      message: "Which agents should syncode manage?",
+      options: AGENTS.map((agent) => ({
+        value: agent.id,
+        label: agent.name,
+        ...(detected.includes(agent.id) ? { hint: "detected" } : {}),
+      })),
+      initialValues: current ?? detected,
+      required: false,
+    }),
+  );
+}
 
-  if (p.isCancel(repoUrlInput)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
-
-  const repoPathInput = await p.text({
-    message: "Where should the agent configs be stored?",
-    placeholder: "~/.syncode/repo",
-    initialValue: "~/.syncode/repo",
-    validate: (value) => {
-      if (!value) return "Repository path is required";
-      return undefined;
-    },
-  });
-
-  if (p.isCancel(repoPathInput)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
-
-  const repoPath = expandHome(repoPathInput);
-
-  if (existsSync(repoPath)) {
-    const useExisting = await p.confirm({
-      message: `Directory ${contractHome(repoPath)} already exists. Use it?`,
-      initialValue: true,
-    });
-
-    if (p.isCancel(useExisting) || !useExisting) {
-      p.cancel("Initialization cancelled.");
-      return;
+/** Creates the repo, or clones it, and reports whether it is brand new. */
+function prepareRepo(source: string | undefined, current: string | undefined) {
+  if (source && isGitUrl(source)) {
+    const repo = current ?? defaultRepo();
+    if (exists(repo)) {
+      throw new UserError(`${prettyPath(repo)} already exists. Move it away to clone ${source}.`);
     }
+    fs.mkdirSync(path.dirname(repo), { recursive: true });
+    git(path.dirname(repo), ["clone", source, repo]);
+    return { repo, created: false };
+  }
+  const repo = path.resolve(expandHome(source ?? current ?? defaultRepo()));
+  if (exists(path.join(repo, ".git"))) return { repo, created: false };
+  fs.mkdirSync(repo, { recursive: true });
+  git(repo, ["init", "-q"]);
+  return { repo, created: true };
+}
 
-    const gitDir = join(repoPath, ".git");
-    if (!existsSync(gitDir)) {
-      p.cancel("Directory is not a git repository.");
-      return;
-    }
+/** Starts a new repo from what this machine already has. */
+async function seed(config: Config) {
+  const agents = enabledAgents(config.agents);
+  const paths = repoPaths(config.repo);
+  writeAtomic(path.join(config.repo, ".gitignore"), `${GITIGNORE_LINES.join("\n")}\n`);
+  writeAtomic(path.join(config.repo, "README.md"), README);
+
+  // Copy rather than adopt: the other agents' files may differ, and apply
+  // will offer to resolve those.
+  const existing = agents
+    .flatMap((agent) => (agent.instructions ? [path.join(agent.home(), agent.instructions)] : []))
+    .find((file) => fs.existsSync(file) && !linkTarget(file));
+  const main = path.join(paths.instructions, "AGENTS.md");
+  if (existing) {
+    // Keep its age, so conflicts with other agents' files suggest the newer one.
+    fs.mkdirSync(paths.instructions, { recursive: true });
+    fs.cpSync(existing, main, { preserveTimestamps: true });
   } else {
-    try {
-      mkdirSync(dirname(repoPath), { recursive: true });
-    } catch (error) {
-      const logFile = logError(error);
-      p.cancel(
-        `Failed to create directory: ${error}\n${getErrorLogFile(logFile)}`,
-      );
-      return;
-    }
+    writeAtomic(main, STARTER_INSTRUCTIONS);
+  }
+  console.log(
+    `[create ] ${prettyPath(main, config.repo)}${existing ? ` from ${prettyPath(existing)}` : ""}`,
+  );
 
-    try {
-      execSync(`git clone "${repoUrlInput}" "${repoPath}"`, {
-        stdio: "pipe",
-      });
-      p.log.success("✓ Cloned repository");
-    } catch (_error) {
-      p.cancel("Failed to clone repository.");
-      return;
+  const roots = [
+    sharedSkillsDir(),
+    ...agents.filter((agent) => agent.ownSkills).map((agent) => path.join(agent.home(), "skills")),
+  ];
+  const found = new Map<string, string>();
+  for (const dir of roots.flatMap(children)) {
+    const name = path.basename(dir);
+    if (!found.has(name) && !linkTarget(dir) && fs.existsSync(path.join(dir, "SKILL.md"))) {
+      found.set(name, dir);
     }
   }
-
-  const platform: Platform =
-    process.platform === "darwin"
-      ? "macos"
-      : process.platform === "win32"
-        ? "windows"
-        : "linux";
-  const detectedAgents = detectInstalledAgents(platform);
-  const agentsWithAdapters = getAgentsWithAdapters();
-
-  const repoAgents = SUPPORTED_AGENTS.filter((id) => {
-    const adapter = adapterRegistry.get(id);
-    if (!adapter) return false;
-    return existsSync(adapter.getRepoPath(repoPath));
-  });
-
-  const agentOptions = SUPPORTED_AGENTS.map((id) => {
-    const detected = detectedAgents.includes(id);
-    const hasAdapter = agentsWithAdapters.includes(id);
-    const metadata = getAgentMetadata(id);
-    const label =
-      metadata?.displayName || id.charAt(0).toUpperCase() + id.slice(1);
-    const hint = detected
-      ? hasAdapter
-        ? "Installed • Full sync"
-        : "Installed • Metadata only"
-      : hasAdapter
-        ? "Not found • Full sync available"
-        : "Not found";
-
-    return {
-      value: id,
-      label: detected ? `${label} (detected ✓)` : label,
-      hint,
-    };
-  });
-
-  const agentsInput = await p.multiselect({
-    message: "Which AI agents do you want to sync?",
-    options: agentOptions,
-    initialValues: repoAgents.length > 0 ? repoAgents : detectedAgents,
-    required: false,
-  });
-
-  if (p.isCancel(agentsInput)) {
-    p.cancel("Initialization cancelled.");
+  if (!found.size) return;
+  if (!canPrompt()) {
+    console.log(`Found ${found.size} local skill(s); add them with \`syncode adopt <dir>\`.`);
     return;
   }
+  const skills = answer(
+    await p.multiselect({
+      message: "Move these local skills into the repo?",
+      options: [...found.values()].map((dir) => ({
+        value: dir,
+        label: path.basename(dir),
+        hint: prettyPath(dir),
+      })),
+      initialValues: [...found.values()],
+      required: false,
+    }),
+  );
+  adopt(skills, config.repo, agents);
+}
 
-  let selectedAgents = agentsInput as string[];
-  const expandedAgents = ensureSharedSkillsAgent(selectedAgents);
-  if (
-    expandedAgents.length > selectedAgents.length &&
-    selectedAgents.some(usesSharedSkills)
-  ) {
-    p.log.info("Including Shared Agents (.agents) for shared skills");
+export async function initCommand(source: string | undefined, options: { agents?: string }) {
+  const stored = readConfig();
+  if (stored?.kind === "legacy") {
+    await migrate(
+      stored.config,
+      options.agents === undefined ? undefined : parseAgents(options.agents),
+    );
+    return;
   }
-  selectedAgents = expandedAgents;
+  const current = stored?.config;
+  const { repo, created } = prepareRepo(source, source === undefined ? current?.repo : undefined);
+  const config: Config = {
+    version: 2,
+    repo,
+    agents: await chooseAgents(options.agents, current?.agents),
+  };
+  writeConfig(config);
+  console.log(`Using ${prettyPath(repo)} for ${config.agents.join(", ") || "no agents"}.\n`);
 
-  if (selectedAgents.length === 0) {
-    p.log.warn(
-      "No agents selected. You can add them later by editing ~/.syncode/config.json",
-    );
-  }
+  if (created) await seed(config);
+  await apply(new Files({ repo, dryRun: false }), enabledAgents(config.agents));
 
-  if (selectedAgents.length > 0) {
-    const selectedWithAdapters = selectedAgents.filter((id) =>
-      agentsWithAdapters.includes(id),
-    );
-    const selectedWithoutAdapters = selectedAgents.filter(
-      (id) => !agentsWithAdapters.includes(id),
-    );
-
-    if (selectedWithAdapters.length > 0) {
-      p.log.info("Using smart sync defaults:");
-      p.log.info(
-        "  • Symlinks: Cursor, OpenCode, Windsurf, VSCode (live sync)",
-      );
-      p.log.info("  • Copy: Claude Code (preserves cache/history)");
-    }
-
-    if (selectedWithoutAdapters.length > 0) {
-      const agentNames = selectedWithoutAdapters
-        .map((id) => getAgentMetadata(id)?.displayName || id)
-        .join(", ");
-      p.log.warn(`Note: ${agentNames} - metadata only (no sync adapter yet)`);
-    }
-  }
-
-  try {
-    initConfig({
-      repoPath: repoPathInput,
-      remote: repoUrlInput,
-      agents: selectedAgents,
-    });
-
-    const agentList =
-      selectedAgents.length > 0
-        ? selectedAgents
-            .map((id) => {
-              const adapter = adapterRegistry.get(id);
-              return adapter ? adapter.name : id;
-            })
-            .join(", ")
-        : "none";
-
-    p.outro(
-      `✓ Existing repository connected!
-
-Repository: ${contractHome(repoPath)}
-Configuration: ~/.syncode/config.json
-Agents: ${agentList}
-
-Next steps:
-  • Run 'syncode sync' and select "Export"
-  • Configs in ${contractHome(repoPath)}/configs will apply to this machine`,
-    );
-  } catch (error) {
-    const logFile = logError(error);
-    p.cancel(
-      `Failed to create configuration: ${error}\n${getErrorLogFile(logFile)}`,
-    );
-  }
+  console.log(
+    created
+      ? `\nCommit the repo and add a remote to share it:\n  git -C ${prettyPath(repo)} add -A && git -C ${prettyPath(repo)} commit -m "Initial agent configs"\n  git -C ${prettyPath(repo)} remote add origin <url> && syncode push`
+      : "\nDone. Run `syncode status` any time to check for drift.",
+  );
 }
