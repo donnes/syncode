@@ -1,6 +1,6 @@
 {
   "name": "@donnes/syncode",
-  "version": "1.1.9",
+  "version": "0.0.0-development",
   "private": false,
   "description": "Sync AI coding agent instructions, skills and configs (Claude Code, Codex, OpenCode, Gemini CLI, Cursor, Copilot) across machines.",
   "keywords": [

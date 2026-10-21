@@ -22,5 +22,5 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false
   },
-  "include": ["src", "tests", "*.config.ts", "scripts/check-package.ts"]
+  "include": ["src", "tests", "scripts", "*.config.ts"]
 }

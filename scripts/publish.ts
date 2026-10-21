@@ -1,12 +1,13 @@
-#!/usr/bin/env bun
-// Publishes to npm with trusted publishing (GitHub OIDC), so no npm token is
-// stored in the repo. Requires npm >= 11.5.1 and the package's trusted
-// publisher set to this repo's "Release & Publish" workflow on npmjs.com.
+// Publishes the tagged version to npm with trusted publishing (GitHub OIDC),
+// so no npm token is stored in the repo. Requires npm >= 11.5.1 and the
+// package's trusted publisher set to this repo's publish.yml on npmjs.com.
 
-import { $ } from "bun";
+import { run } from "./run.ts";
 
-await $`bun run build`;
-await $`npm publish --access public --provenance`;
+const version = process.env.VERSION;
+if (!version) throw new Error("Set VERSION to the version being published.");
 
-const pkg = await Bun.file("package.json").json();
-console.log(`Published ${pkg.name}@${pkg.version}`);
+// The repo's package.json carries a placeholder; the tag is the version.
+run("npm", ["version", version, "--no-git-tag-version"]);
+run("bun", ["run", "build"]);
+run("npm", ["publish", "--access", "public", "--provenance"]);
