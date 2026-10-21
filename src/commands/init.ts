@@ -78,6 +78,13 @@ function prepareRepo(source: string | undefined, current: string | undefined) {
   }
   const repo = path.resolve(expandHome(source ?? current ?? defaultRepo()));
   if (exists(path.join(repo, ".git"))) return { repo, created: false };
+  // Starting a repo writes README.md, .gitignore and instructions/, so only
+  // do it in a new or empty folder.
+  if (children(repo).length) {
+    throw new UserError(
+      `${prettyPath(repo)} has files but isn't a git repo. Pick an empty folder, or run \`git init\` there first to use it as is.`,
+    );
+  }
   fs.mkdirSync(repo, { recursive: true });
   git(repo, ["init", "-q"]);
   return { repo, created: true };

@@ -17,6 +17,8 @@ export interface Sandbox {
   link: (file: string) => string | undefined;
   config: (agents: string[]) => void;
   run: (...args: string[]) => { status: number | null; output: string };
+  /** Entries from `syncode status --json`. */
+  status: () => { action: string; path: string }[];
 }
 
 export function sandbox(name: string): Sandbox {
@@ -58,6 +60,11 @@ export function sandbox(name: string): Sandbox {
         },
       });
       return { status: result.status, output: result.stdout + result.stderr };
+    },
+    status() {
+      const result = this.run("status", "--json");
+      if (result.status !== 0) throw new Error(result.output);
+      return JSON.parse(result.output).entries;
     },
   };
 }

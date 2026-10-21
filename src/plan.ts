@@ -1,7 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { type Agent, type AgentId, findAgent, sharedSkillsDir } from "./agents.ts";
-import { children, exists, type Files, linkTarget, walk, writeAtomic } from "./files.ts";
+import {
+  canonicalPath,
+  children,
+  exists,
+  type Files,
+  linkTarget,
+  walk,
+  writeAtomic,
+} from "./files.ts";
 import { syncodeDir } from "./paths.ts";
 
 export interface Link {
@@ -94,7 +102,15 @@ export function plan(repo: string, agents: readonly Agent[]): Plan {
     }
   }
 
-  return generated ? { generated, links } : { links };
+  // Drop destinations that are the same entry as an earlier one.
+  const seen = new Set<string>();
+  const unique = links.filter((link) => {
+    const key = canonicalPath(link.destination);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return generated ? { generated, links: unique } : { links: unique };
 }
 
 // Links made by the last apply, so links dropped from the plan get pruned.
@@ -129,9 +145,9 @@ export async function apply(files: Files, agents: readonly Agent[]) {
     await files.link(link.source, link.destination, preview);
   }
 
-  const wanted = new Set(links.map((link) => link.destination));
+  const wanted = new Set(links.map((link) => canonicalPath(link.destination)));
   for (const destination of readState()) {
-    if (!wanted.has(destination)) files.prune(destination);
+    if (!wanted.has(canonicalPath(destination))) files.prune(destination);
   }
 
   if (!files.dryRun) {

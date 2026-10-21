@@ -43,7 +43,8 @@ function restoreLegacyLinks(repo: string) {
     const target = linkTarget(file);
     if (target === undefined) continue;
     const resolved = path.resolve(path.dirname(file), target);
-    if (!within(resolved, repo) || !exists(resolved)) continue;
+    const legacyRoots = [path.join(repo, "configs"), path.join(repo, ".agents")];
+    if (!legacyRoots.some((root) => within(resolved, root)) || !exists(resolved)) continue;
     const temporary = `${file}.syncode-restore`;
     fs.cpSync(resolved, temporary, {
       recursive: true,

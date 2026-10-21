@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import { homedir } from "node:os";
 import * as path from "node:path";
 import * as p from "@clack/prompts";
+import { UserError } from "./errors.ts";
 import { syncodeDir } from "./paths.ts";
 import { answer, canPrompt } from "./prompts.ts";
 
@@ -61,6 +62,15 @@ export function linkTarget(file: string): string | undefined {
   return fs.lstatSync(file, { throwIfNoEntry: false })?.isSymbolicLink()
     ? fs.readlinkSync(file)
     : undefined;
+}
+
+/**
+ * The path with its parent folder resolved, so two paths that reach the same
+ * entry through a linked folder (~/.claude/skills -> ~/.agents/skills) match.
+ */
+export function canonicalPath(file: string): string {
+  const parent = path.dirname(file);
+  return path.join(realPath(parent) ?? parent, path.basename(file));
 }
 
 export function prettyPath(file: string, repo?: string): string {
@@ -149,7 +159,9 @@ export class Files {
   /** A symlink that points into the repo. */
   managed(file: string): boolean {
     const target = linkTarget(file);
-    return target !== undefined && within(path.resolve(path.dirname(file), target), this.repo);
+    if (target === undefined) return false;
+    const resolved = path.resolve(path.dirname(file), target);
+    return within(resolved, this.repo) || within(resolved, realPath(this.repo) ?? this.repo);
   }
 
   // A parent directory link can make the destination the very same entry as
@@ -234,8 +246,10 @@ export class Files {
         return;
       }
       if (choice === "replace") {
-        const backup = path.join(this.backupDir, path.relative(homedir(), destination));
-        move(current, backup);
+        // Move the destination itself: if it's a link to someone else's file,
+        // that file must stay where it is.
+        const backup = this.backupPath(destination);
+        move(destination, backup);
         this.log("replace", destination, `(backup in ${this.pretty(backup)})`);
       } else {
         this.log("update", destination);
@@ -245,11 +259,24 @@ export class Files {
     }
   }
 
+  private backupPath(destination: string): string {
+    const relative = path.relative(homedir(), destination);
+    return relative.startsWith("..")
+      ? path.join(this.backupDir, "abs", destination)
+      : path.join(this.backupDir, relative);
+  }
+
   /**
    * Links `destination` to `source`. Identical local copies are replaced
    * silently; differing ones are a conflict for the user to resolve.
    */
   async link(source: string, destination: string, preview?: string) {
+    const parent = path.dirname(destination);
+    if (linkTarget(parent) !== undefined && !fs.existsSync(parent)) {
+      throw new UserError(
+        `${this.pretty(parent)} is a broken link. Remove it or recreate its target, then rerun.`,
+      );
+    }
     if (this.aliasesSource(source, destination) || linkTarget(destination) === source) {
       this.log("skip", destination);
       return;

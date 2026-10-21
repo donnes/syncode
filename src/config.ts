@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import { join } from "node:path";
+import * as path from "node:path";
 import { type AgentId, isAgentId } from "./agents.ts";
 import { UserError } from "./errors.ts";
 import { writeAtomic } from "./files.ts";
@@ -23,11 +23,11 @@ export type StoredConfig =
   | { kind: "legacy"; config: LegacyConfig };
 
 export function configFile(): string {
-  return join(syncodeDir(), "config.json");
+  return path.join(syncodeDir(), "config.json");
 }
 
 export function defaultRepo(): string {
-  return join(syncodeDir(), "repo");
+  return path.join(syncodeDir(), "repo");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -56,13 +56,17 @@ export function readConfig(): StoredConfig | undefined {
     }
     return {
       kind: "current",
-      config: { version: 2, repo: expandHome(value.repo), agents: value.agents.filter(isAgentId) },
+      config: {
+        version: 2,
+        repo: path.resolve(expandHome(value.repo)),
+        agents: value.agents.filter(isAgentId),
+      },
     };
   }
   if (typeof value.repoPath === "string" && isStringArray(value.agents)) {
     return {
       kind: "legacy",
-      config: { repoPath: expandHome(value.repoPath), agents: value.agents },
+      config: { repoPath: path.resolve(expandHome(value.repoPath)), agents: value.agents },
     };
   }
   throw new UserError(`${file} is not a syncode config; fix or delete it, then rerun.`);

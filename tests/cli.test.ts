@@ -27,6 +27,16 @@ describe("init", () => {
     ]);
   });
 
+  test("refuses to set up in a folder that already has other files", () => {
+    const box = sandbox("init-existing");
+    box.write({ "configs/README.md": "mine" });
+
+    const init = box.run("init", path.join(box.home, "configs"));
+    expect(init.status).toBe(1);
+    expect(box.read("configs/README.md")).toBe("mine");
+    expect(fs.existsSync(path.join(box.home, "configs/.git"))).toBe(false);
+  });
+
   test("migrates a 1.x setup without breaking the agents' folders", () => {
     const box = sandbox("init-migrate");
     box.write({
@@ -47,11 +57,14 @@ describe("init", () => {
       path.join(box.home, ".config/opencode"),
     );
     fs.symlinkSync(path.join(box.repo, ".agents"), path.join(box.home, ".agents"));
+    // A shortcut to the repo itself is not a 1.x agent link.
+    fs.symlinkSync(box.repo, path.join(box.home, "configs-shortcut"));
 
     const init = box.run("init");
     expect(init.status, init.output).toBe(0);
 
     expect(box.link(".config/opencode")).toBeUndefined();
+    expect(box.link("configs-shortcut")).toBe(".syncode/repo");
     expect(box.read(".config/opencode/opencode.json")).toBe("{}");
     expect(fs.existsSync(path.join(box.home, ".config/opencode/skills"))).toBe(false);
     expect(box.link(".config/opencode/AGENTS.md")).toBe(".syncode/repo/instructions/AGENTS.md");
@@ -124,6 +137,26 @@ describe("apply", () => {
     expect(box.link(".claude/skills/b")).toBeUndefined();
     expect(box.link(".claude/skills/a")).toBe(".syncode/repo/skills/a");
   });
+
+  test("treats a skills folder linked to another as the same folder", () => {
+    // 1.x left ~/.claude/skills linked to ~/.agents/skills.
+    const box = sandbox("apply-aliased-skills");
+    box.config(["claude", "codex"]);
+    box.write({ ".syncode/repo/skills/a/SKILL.md": "a" });
+    fs.mkdirSync(path.join(box.home, ".agents/skills"), { recursive: true });
+    fs.mkdirSync(path.join(box.home, ".claude"));
+    fs.symlinkSync(path.join(box.home, ".agents/skills"), path.join(box.home, ".claude/skills"));
+
+    // One real link to make, and status agrees with apply about it.
+    expect(box.status().map((entry) => entry.action)).toEqual(["link"]);
+    expect(box.run("apply").status).toBe(0);
+    expect(box.status().map((entry) => entry.action)).toEqual(["skip"]);
+
+    // Disabling Codex must not prune the link Claude now reaches it through.
+    box.config(["claude"]);
+    expect(box.run("apply").status).toBe(0);
+    expect(box.link(".agents/skills/a")).toBe(".syncode/repo/skills/a");
+  });
 });
 
 describe("adopt", () => {
@@ -148,6 +181,13 @@ describe("adopt", () => {
     expect(adopt.output).toContain("Refusing to adopt auth.json");
     expect(box.read(".codex/auth.json")).toBe("secret");
     expect(fs.existsSync(path.join(box.repo, "agents"))).toBe(false);
+
+    // Also when they're inside an adopted folder.
+    box.write({ ".codex/rules/.env": "TOKEN=1" });
+    const folder = box.run("adopt", path.join(box.home, ".codex/rules"));
+    expect(folder.status).toBe(1);
+    expect(folder.output).toContain("Refusing to adopt .env");
+    expect(box.read(".codex/rules/.env")).toBe("TOKEN=1");
   });
 });
 
