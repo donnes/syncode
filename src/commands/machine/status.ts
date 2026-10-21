@@ -5,6 +5,7 @@ import { getConfig } from "../../config/manager";
 import { contractHome, expandHome, getConfigsDir } from "../../utils/paths";
 import { getPackageManager, getPlatformName } from "../../utils/platform";
 import { exec } from "../../utils/shell";
+import { getErrorLogFile, logError } from "../../utils/trace";
 
 export async function machineStatusCommand(options?: { skipIntro?: boolean }) {
   if (!options?.skipIntro) {
@@ -69,7 +70,6 @@ export async function machineStatusCommand(options?: { skipIntro?: boolean }) {
 
     p.outro("Done");
   } catch (error) {
-    const { logError, getErrorLogFile } = require("../../utils/trace");
     const logFile = logError(error);
     p.cancel(`Error: ${error}\n${getErrorLogFile(logFile)}`);
   }

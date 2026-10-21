@@ -14,6 +14,7 @@ import {
 import { configExists, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
 import { contractHome, expandHome } from "../utils/paths";
+import { getErrorLogFile, logError } from "../utils/trace";
 
 export async function initCommand() {
   p.intro("Initialize from Existing Repo");
@@ -82,7 +83,6 @@ export async function initCommand() {
     try {
       mkdirSync(dirname(repoPath), { recursive: true });
     } catch (error) {
-      const { logError, getErrorLogFile } = require("../utils/trace");
       const logFile = logError(error);
       p.cancel(
         `Failed to create directory: ${error}\n${getErrorLogFile(logFile)}`,
@@ -218,7 +218,6 @@ Next steps:
   • Configs in ${contractHome(repoPath)}/configs will apply to this machine`,
     );
   } catch (error) {
-    const { logError, getErrorLogFile } = require("../utils/trace");
     const logFile = logError(error);
     p.cancel(
       `Failed to create configuration: ${error}\n${getErrorLogFile(logFile)}`,

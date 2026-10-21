@@ -2,7 +2,7 @@
  * Codex adapter
  */
 
-import { unlinkSync } from "node:fs";
+import { renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   copyDir,
@@ -25,6 +25,24 @@ import type {
   ImportResult,
   Platform,
 } from "./types";
+
+// ~/.codex is symlinked into the repo, so Codex's runtime data (sqlite logs,
+// sessions, worktrees, plugin binaries, auth.json) lands in the repo too.
+// Track only real config.
+const CODEX_GITIGNORE = `# Managed by syncode: only sync Codex config, not runtime data
+/*
+!/.gitignore
+!/AGENTS.md
+!/config.toml
+!/prompts/
+!/rules/
+!/skills
+/skills/.system/
+`;
+
+function writeCodexGitignore(repoPath: string): void {
+  writeFileSync(join(repoPath, ".gitignore"), CODEX_GITIGNORE);
+}
 
 export class CodexAdapter implements AgentAdapter {
   readonly id = "codex";
@@ -92,6 +110,7 @@ export class CodexAdapter implements AgentAdapter {
 
     ensureDir(repoPath);
     copyDir(systemPath, repoPath);
+    writeCodexGitignore(repoPath);
 
     return {
       success: true,
@@ -106,6 +125,8 @@ export class CodexAdapter implements AgentAdapter {
         message: "Codex configs not found in repo",
       };
     }
+
+    writeCodexGitignore(repoPath);
 
     if (isSymlink(systemPath)) {
       const target = getSymlinkTarget(systemPath);
@@ -132,7 +153,7 @@ export class CodexAdapter implements AgentAdapter {
             removeDir(backupPath);
           }
         }
-        require("node:fs").renameSync(systemPath, backupPath);
+        renameSync(systemPath, backupPath);
       }
     }
 

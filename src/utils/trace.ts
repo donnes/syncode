@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getRepoRoot } from "./paths";
 
 export interface TraceData {
@@ -17,10 +18,11 @@ export interface TraceData {
 }
 
 export function logError(
-  error: Error,
+  thrown: unknown,
   command?: string,
   args?: string[],
 ): string {
+  const error = thrown instanceof Error ? thrown : new Error(String(thrown));
   const repoRoot = getRepoRoot();
   const timestamp = Date.now();
   const logDir = join(repoRoot, ".syncode-logs");
@@ -58,9 +60,6 @@ export function getErrorLogFile(logFile: string): string {
 
 function getVersion(): string {
   try {
-    const { readFileSync } = require("node:fs");
-    const { join, dirname } = require("node:path");
-    const { fileURLToPath } = require("node:url");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
     const packageJson = JSON.parse(

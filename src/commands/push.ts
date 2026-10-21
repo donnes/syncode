@@ -15,6 +15,7 @@ import {
   stageAll,
 } from "../utils/git";
 import { expandHome } from "../utils/paths";
+import { getErrorLogFile, logError } from "../utils/trace";
 
 export async function pushCommand() {
   p.intro("Push to Remote");
@@ -132,7 +133,6 @@ export async function pushCommand() {
     p.outro("Successfully pushed to remote");
   } else {
     spinner.stop("Push failed");
-    const { logError, getErrorLogFile } = require("../utils/trace");
     const logFile = logError(new Error(result.message), "push");
     p.log.error(result.message);
     p.cancel(`Failed to push to remote\n${getErrorLogFile(logFile)}`);

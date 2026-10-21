@@ -15,6 +15,7 @@ import {
   pull,
 } from "../utils/git";
 import { expandHome } from "../utils/paths";
+import { getErrorLogFile, logError } from "../utils/trace";
 
 export async function pullCommand() {
   p.intro("Pull from Remote");
@@ -102,7 +103,6 @@ export async function pullCommand() {
     p.outro("Successfully pulled from remote");
   } else {
     spinner.stop("Pull failed");
-    const { logError, getErrorLogFile } = require("../utils/trace");
     const logFile = logError(new Error(result.message), "pull");
     p.log.error(result.message);
     p.cancel(`Failed to pull from remote\n${getErrorLogFile(logFile)}`);

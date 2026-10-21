@@ -15,6 +15,7 @@ import {
   removeDir,
 } from "../utils/fs";
 import { expandHome } from "../utils/paths";
+import { logError } from "../utils/trace";
 
 function copyDirReplacingSymlinks(src: string, dest: string): void {
   ensureDir(dest);
@@ -145,7 +146,6 @@ export async function unsyncCommand() {
     } catch (error) {
       const errorObj =
         error instanceof Error ? error : new Error(String(error));
-      const { logError } = require("../utils/trace");
       logError(errorObj, "unsync");
       s.message(`✗ Error unsyncing ${adapter.name}: ${error}`);
       failCount++;

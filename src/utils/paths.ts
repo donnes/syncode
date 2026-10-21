@@ -1,6 +1,7 @@
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tryGetRepoRoot } from "../config/manager";
 import { isMacOS } from "./platform";
 
 // Home directory
@@ -16,15 +17,9 @@ const LEGACY_REPO_ROOT = resolve(dirname(dirname(__dirname)));
  * Tries to read from config, falls back to legacy path for backward compatibility
  */
 export function getRepoRoot(): string {
-  // Import here to avoid circular dependency
-  try {
-    const { tryGetRepoRoot } = require("../config/manager");
-    const configPath = tryGetRepoRoot();
-    if (configPath) {
-      return configPath;
-    }
-  } catch {
-    // Config module not available or error reading config
+  const configPath = tryGetRepoRoot();
+  if (configPath) {
+    return configPath;
   }
 
   // Fall back to legacy path
