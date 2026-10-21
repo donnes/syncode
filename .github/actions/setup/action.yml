@@ -1,6 +1,11 @@
 name: Setup
 description: Install Bun, Node and dependencies
 
+inputs:
+  node-version:
+    description: Node version to install
+    default: "24"
+
 runs:
   using: composite
   steps:
@@ -8,11 +13,10 @@ runs:
       with:
         bun-version-file: package.json
 
-    # Tests run the CLI's TypeScript directly, which needs Node >= 22.18.
-    # Node 24 also ships the npm needed for trusted publishing.
+    # Node 24 ships the npm needed for trusted publishing.
     - uses: actions/setup-node@v5
       with:
-        node-version: 24
+        node-version: ${{ inputs.node-version }}
         registry-url: https://registry.npmjs.org
 
     - run: bun install --frozen-lockfile

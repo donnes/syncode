@@ -21,17 +21,25 @@ jobs:
       - run: bun run typecheck
       - run: bun run knip
       - run: bun run build
-      - name: Run the bundled CLI under Node
-        run: node dist/index.mjs --version
+      - name: Pack, install and run the published package
+        run: bun run check:package
 
+  # Tests run the built bundle, on both platforms and on the oldest Node that
+  # package.json's engines allows.
   test:
     needs: static
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - { os: ubuntu-latest, node: "24" }
+          - { os: macos-latest, node: "24" }
+          - { os: ubuntu-latest, node: "22.12.0" }
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node }}
       - run: bun run test
