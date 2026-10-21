@@ -24,22 +24,27 @@ jobs:
       - name: Pack, install and run the published package
         run: bun run check:package
 
-  # Tests run the built bundle, on both platforms and on the oldest Node that
-  # package.json's engines allows.
+  # Tests run the built bundle on both platforms, and with the CLI on the
+  # oldest Node that package.json's engines allows. Vitest itself always runs
+  # on Node 24: the dev toolchain may need a newer Node than users do.
   test:
     needs: static
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, node: "24" }
-          - { os: macos-latest, node: "24" }
-          - { os: ubuntu-latest, node: "22.12.0" }
-    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+          - { os: ubuntu-latest, cli-node: "24" }
+          - { os: macos-latest, cli-node: "24" }
+          - { os: ubuntu-latest, cli-node: "22.12.0" }
+    name: test (${{ matrix.os }}, CLI on node ${{ matrix.cli-node }})
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - if: matrix.cli-node != '24'
+        uses: actions/setup-node@v5
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ matrix.cli-node }}
+      - if: matrix.cli-node != '24'
+        run: echo "SYNCODE_TEST_NODE=$(command -v node)" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup
       - run: bun run test
