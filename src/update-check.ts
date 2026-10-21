@@ -34,9 +34,12 @@ function readCache(): Cache | undefined {
   return undefined;
 }
 
-export function isOutdated(current: string, latest: string): boolean {
-  const parse = (version: string) => version.split("-")[0]?.split(".").map(Number) ?? [];
-  const [a, b] = [parse(current), parse(latest)];
+function parseVersion(version: string): number[] {
+  return version.split("-")[0]?.split(".").map(Number) ?? [];
+}
+
+function isOutdated(current: string, latest: string): boolean {
+  const [a, b] = [parseVersion(current), parseVersion(latest)];
   for (let i = 0; i < 3; i++) {
     const [x, y] = [a[i] ?? 0, b[i] ?? 0];
     if (x !== y) return y > x;

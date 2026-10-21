@@ -28,6 +28,22 @@ export function sandbox(name: string): Sandbox {
   const repo = path.join(home, ".syncode", "repo");
   const at = (file: string) => path.join(home, file);
 
+  const run: Sandbox["run"] = (...args) => {
+    // Not a TTY, so the CLI never prompts. Only allowlisted variables pass
+    // through, so the real agent homes can't leak in.
+    const result = spawnSync(process.execPath, [cli, ...args], {
+      cwd: home,
+      encoding: "utf8",
+      env: {
+        PATH: process.env.PATH,
+        HOME: home,
+        GIT_CONFIG_GLOBAL: path.join(home, ".gitconfig"),
+        GIT_CONFIG_NOSYSTEM: "1",
+      },
+    });
+    return { status: result.status, output: result.stdout + result.stderr };
+  };
+
   return {
     home,
     repo,
@@ -46,23 +62,9 @@ export function sandbox(name: string): Sandbox {
       fs.mkdirSync(repo, { recursive: true });
       fs.writeFileSync(at(".syncode/config.json"), JSON.stringify({ version: 2, repo, agents }));
     },
-    run(...args) {
-      // Not a TTY, so the CLI never prompts. Only allowlisted variables pass
-      // through, so the real agent homes can't leak in.
-      const result = spawnSync(process.execPath, [cli, ...args], {
-        cwd: home,
-        encoding: "utf8",
-        env: {
-          PATH: process.env.PATH,
-          HOME: home,
-          GIT_CONFIG_GLOBAL: path.join(home, ".gitconfig"),
-          GIT_CONFIG_NOSYSTEM: "1",
-        },
-      });
-      return { status: result.status, output: result.stdout + result.stderr };
-    },
+    run,
     status() {
-      const result = this.run("status", "--json");
+      const result = run("status", "--json");
       if (result.status !== 0) throw new Error(result.output);
       return JSON.parse(result.output).entries;
     },

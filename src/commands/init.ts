@@ -33,7 +33,7 @@ function isGitUrl(source: string): boolean {
   return /^(https?|ssh|git):\/\//.test(source) || /^[\w.-]+@[\w.-]+:/.test(source);
 }
 
-export function parseAgents(list: string): AgentId[] {
+function parseAgents(list: string): AgentId[] {
   const ids = list
     .split(",")
     .map((id) => id.trim())
@@ -51,8 +51,8 @@ async function chooseAgents(flag: string | undefined, current: AgentId[] | undef
   if (flag !== undefined) return parseAgents(flag);
   const detected = detectAgents();
   if (!canPrompt()) return current ?? detected;
-  return answer(
-    await p.multiselect<AgentId>({
+  return answer<AgentId[]>(
+    await p.multiselect({
       message: "Which agents should syncode manage?",
       options: AGENTS.map((agent) => ({
         value: agent.id,
@@ -130,7 +130,7 @@ async function seed(config: Config) {
     console.log(`Found ${found.size} local skill(s); add them with \`syncode adopt <dir>\`.`);
     return;
   }
-  const skills = answer(
+  const skills = answer<string[]>(
     await p.multiselect({
       message: "Move these local skills into the repo?",
       options: [...found.values()].map((dir) => ({

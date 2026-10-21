@@ -6,7 +6,7 @@ syncode is a TypeScript CLI, published to npm, that links AI coding agents' inst
 
 - Package manager: bun. Runtime: Node >= 22.12 for the published CLI, >= 22.18 to run from source.
 - `bun run dev -- <command>`: run from source with Node's type stripping.
-- `bun run check`: lint (Biome), typecheck (`tsc`), test (Vitest), build (tsdown). Run before pushing.
+- `bun run check`: format check (oxfmt), type-aware lint (oxlint), typecheck (`tsc`), unused code (knip), tests (Vitest), build (tsdown). Run before pushing; `bun run format` fixes formatting.
 
 ## Layout
 
@@ -21,6 +21,7 @@ syncode is a TypeScript CLI, published to npm, that links AI coding agents' inst
 
 - Only Node built-ins plus `@clack/prompts`. Prefer data over per-agent classes.
 - Never prompt when stdin or stdout isn't a TTY; keep the local file and report it instead.
-- Expected failures throw `UserError` (printed without a stack). No `require`: the bundle is ESM.
-- Test through the CLI boundary in `tests/`. Don't export internals or add flags just for tests.
+- Expected failures throw `UserError` (printed without a stack). No `require`: the bundle is ESM (enforced by `import/no-commonjs`).
+- Prefer static checks over tests: if a type, a lint rule or knip can catch a mistake, use that. Tests are for behavior only the real CLI can show (filesystem effects, non-interactive fallbacks, migration).
+- Test through the CLI boundary in `tests/`, asserting on filesystem state and `status --json`, not log text. Don't export internals or add flags just for tests.
 - Comments explain why, not what.

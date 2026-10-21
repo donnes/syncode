@@ -5,8 +5,27 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  # Fast, static checks first; most mistakes stop here before any test runs.
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run knip
+      - run: bun run build
+      - name: Run the bundled CLI under Node
+        run: node dist/index.mjs --version
+
+  test:
+    needs: static
     strategy:
       fail-fast: false
       matrix:
@@ -14,13 +33,5 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-
       - uses: ./.github/actions/setup
-
-      - run: bun run lint
-      - run: bun run typecheck
       - run: bun run test
-      - run: bun run build
-
-      - name: Run the bundled CLI under Node
-        run: node dist/index.mjs --version

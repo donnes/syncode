@@ -1,21 +1,26 @@
 {
-	"compilerOptions": {
-		"target": "ES2023",
-		"lib": ["ES2023"],
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"types": ["node"],
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"exactOptionalPropertyTypes": true,
-		"noImplicitOverride": true,
-		"noFallthroughCasesInSwitch": true,
-		"verbatimModuleSyntax": true,
-		"erasableSyntaxOnly": true,
-		"allowImportingTsExtensions": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"noEmit": true
-	},
-	"include": ["src", "tests", "*.config.ts"]
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
+  },
+  "include": ["src", "tests", "*.config.ts"]
 }

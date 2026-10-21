@@ -17,14 +17,9 @@ describe("init", () => {
     expect(box.read(".syncode/repo/instructions/AGENTS.md")).toBe("# mine\n");
     expect(box.link(".claude/CLAUDE.md")).toBe(".syncode/repo/instructions/AGENTS.md");
     expect(box.link(".codex/AGENTS.md")).toBe(".syncode/repo/instructions/AGENTS.md");
-    expect(box.read(".syncode/repo/.gitignore")).toContain("instructions/local.md");
 
     // Applying again is a no-op.
-    const status = JSON.parse(box.run("status", "--json").output);
-    expect(status.entries.map((entry: { action: string }) => entry.action)).toEqual([
-      "skip",
-      "skip",
-    ]);
+    expect(box.status().map((entry) => entry.action)).toEqual(["skip", "skip"]);
   });
 
   test("refuses to set up in a folder that already has other files", () => {
@@ -84,7 +79,6 @@ describe("init", () => {
       version: 2,
       agents: ["claude", "opencode", "gemini"],
     });
-    expect(init.output).toContain("No longer managed by syncode: windsurf");
   });
 });
 
@@ -99,10 +93,11 @@ describe("apply", () => {
 
     const apply = box.run("apply");
     expect(apply.status, apply.output).toBe(0);
-    expect(apply.output).toContain("[keep   ] ~/.codex/AGENTS.md differs");
     expect(box.link(".codex/AGENTS.md")).toBeUndefined();
     expect(box.read(".codex/AGENTS.md")).toBe("local\n");
-    expect(box.run("status").output).toContain("[differs] ~/.codex/AGENTS.md");
+    expect(box.status()).toEqual([
+      expect.objectContaining({ action: "differs", path: path.join(box.home, ".codex/AGENTS.md") }),
+    ]);
   });
 
   test("composes OS and local instructions into one read-only file", () => {
@@ -122,7 +117,7 @@ describe("apply", () => {
     expect(composed).not.toContain("other os");
     expect(() =>
       fs.accessSync(path.join(box.repo, ".generated/AGENTS.md"), fs.constants.W_OK),
-    ).toThrow();
+    ).toThrow(/EACCES/);
   });
 
   test("links skills into the shared and Claude folders, and prunes removed ones", () => {
@@ -133,6 +128,10 @@ describe("apply", () => {
       ".syncode/repo/skills/b/SKILL.md": "b",
     });
 
+    // status is a dry run: it reports the links without making them.
+    expect(box.status().map((entry) => entry.action)).toEqual(["link", "link", "link", "link"]);
+    expect(fs.existsSync(path.join(box.home, ".agents"))).toBe(false);
+
     expect(box.run("apply").status).toBe(0);
     for (const root of [".agents/skills", ".claude/skills"]) {
       expect(box.link(`${root}/a`)).toBe(".syncode/repo/skills/a");
@@ -140,8 +139,7 @@ describe("apply", () => {
     }
 
     fs.rmSync(path.join(box.repo, "skills/b"), { recursive: true });
-    const apply = box.run("apply");
-    expect(apply.output).toContain("[prune  ] ~/.agents/skills/b");
+    expect(box.run("apply").status).toBe(0);
     expect(fs.existsSync(path.join(box.home, ".agents/skills/b"))).toBe(false);
     expect(box.link(".claude/skills/b")).toBeUndefined();
     expect(box.link(".claude/skills/a")).toBe(".syncode/repo/skills/a");

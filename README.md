@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Keep your AI coding agents' instructions, skills and config files in one git repo, and link them into every agent on every machine.
+
 - **One set of instructions** for Claude Code (`CLAUDE.md`), Codex and OpenCode (`AGENTS.md`) and Gemini CLI (`GEMINI.md`), with optional per-OS and per-machine parts.
 - **One skills folder** linked into `~/.agents/skills` (Codex, OpenCode, Gemini CLI, Cursor, Copilot CLI) and `~/.claude/skills`.
 - **Only what you choose.** Config files are synced only after you `adopt` them, and credentials like `auth.json` are refused, so sessions, caches and tokens never reach git.
@@ -75,6 +76,7 @@ If a local file differs from the repo copy, `apply` asks whether to keep it, rep
 ## Upgrading from 1.x
 
 Run `syncode init`. It detects the 1.x config and:
+
 1. Replaces the 1.x whole-folder symlinks (such as `~/.config/opencode`) with real copies, so every agent keeps working.
 2. Moves `.agents/skills/*` to `skills/`, and takes the first `AGENTS.md` or `CLAUDE.md` it finds in `configs/` as `instructions/AGENTS.md`.
 3. Links everything the 2.0 way.
@@ -86,7 +88,7 @@ The 1.x `configs/` folder stays in the repo. `syncode adopt` the files you want 
 ```bash
 bun install
 bun run dev -- status   # run from source (Node >= 22.18)
-bun run check           # lint, typecheck, test, build
+bun run check           # format, lint, typecheck, knip, test, build
 ```
 
 See [AGENTS.md](AGENTS.md) for how the code is organized.
