@@ -46,6 +46,7 @@ describe("init", () => {
         agents: ["agents", "claude", "opencode", "gemini-cli", "windsurf"],
       }),
       ".syncode/repo/configs/opencode/opencode.json": "{}",
+      ".syncode/repo/configs/cursor/settings.json": "{}",
       ".syncode/repo/configs/claude/CLAUDE.md": "# legacy\n",
       ".syncode/repo/.agents/skills/review/SKILL.md": "review",
     });
@@ -57,6 +58,12 @@ describe("init", () => {
       path.join(box.home, ".config/opencode"),
     );
     fs.symlinkSync(path.join(box.repo, ".agents"), path.join(box.home, ".agents"));
+    // On Linux, 1.x linked editor settings one folder deeper.
+    fs.mkdirSync(path.join(box.home, ".config/Cursor"), { recursive: true });
+    fs.symlinkSync(
+      path.join(box.repo, "configs/cursor"),
+      path.join(box.home, ".config/Cursor/User"),
+    );
     // A shortcut to the repo itself is not a 1.x agent link.
     fs.symlinkSync(box.repo, path.join(box.home, "configs-shortcut"));
 
@@ -65,6 +72,8 @@ describe("init", () => {
 
     expect(box.link(".config/opencode")).toBeUndefined();
     expect(box.link("configs-shortcut")).toBe(".syncode/repo");
+    expect(box.link(".config/Cursor/User")).toBeUndefined();
+    expect(box.read(".config/Cursor/User/settings.json")).toBe("{}");
     expect(box.read(".config/opencode/opencode.json")).toBe("{}");
     expect(fs.existsSync(path.join(box.home, ".config/opencode/skills"))).toBe(false);
     expect(box.link(".config/opencode/AGENTS.md")).toBe(".syncode/repo/instructions/AGENTS.md");

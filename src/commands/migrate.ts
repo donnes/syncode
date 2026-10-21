@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import { homedir } from "node:os";
 import * as path from "node:path";
-import { type AgentId, isAgentId } from "../agents.ts";
+import { type Agent, type AgentId, isAgentId } from "../agents.ts";
 import { type LegacyConfig, writeConfig } from "../config.ts";
 import { UserError } from "../errors.ts";
 import {
@@ -19,18 +19,24 @@ import { apply, enabledAgents, GITIGNORE_LINES, repoPaths } from "../plan.ts";
 // 1.x ids that changed in 2.0. Agents not listed here or in AGENTS are dropped.
 const RENAMED: Record<string, AgentId> = { "gemini-cli": "gemini", "github-copilot": "copilot" };
 
-// 1.x linked whole folders and dotfiles at these depths into its repo.
+// Every folder 1.x linked entries in: agent folders, editor User folders and
+// dotfiles, on Linux and macOS.
 function legacyLinkCandidates(): string[] {
   const home = homedir();
+  const config = path.join(home, ".config");
   const support = path.join(home, "Library", "Application Support");
   return [
     home,
-    path.join(home, ".config"),
+    config,
+    path.join(config, "Cursor"),
+    path.join(config, "Code"),
+    path.join(config, "ghostty"),
     path.join(home, ".ssh"),
     path.join(home, ".gemini"),
     path.join(home, ".codeium"),
     path.join(support, "Cursor"),
     path.join(support, "Code"),
+    path.join(support, "com.mitchellh.ghostty"),
   ].flatMap(children);
 }
 
@@ -74,17 +80,18 @@ function migrateSkills(repo: string) {
   }
 }
 
-function migrateInstructions(repo: string) {
+function migrateInstructions(repo: string, agents: readonly Agent[]) {
   const destination = path.join(repoPaths(repo).instructions, "AGENTS.md");
   if (exists(destination)) return;
-  const source = [
-    "codex/AGENTS.md",
-    "claude/CLAUDE.md",
-    "opencode/AGENTS.md",
-    "gemini-cli/GEMINI.md",
-  ]
-    .map((file) => path.join(repo, "configs", file))
-    .find((file) => fs.statSync(file, { throwIfNoEntry: false })?.isFile());
+  const source =
+    ["codex/AGENTS.md", "claude/CLAUDE.md", "opencode/AGENTS.md", "gemini-cli/GEMINI.md"]
+      .map((file) => path.join(repo, "configs", file))
+      .find((file) => fs.statSync(file, { throwIfNoEntry: false })?.isFile()) ??
+    // 1.x copied some agents' folders instead of linking them, so the repo
+    // may have no instructions while this machine does.
+    agents
+      .flatMap((agent) => (agent.instructions ? [path.join(agent.home(), agent.instructions)] : []))
+      .find((file) => fs.existsSync(file) && !linkTarget(file));
   if (!source) return;
   writeAtomic(destination, fs.readFileSync(source, "utf8"));
   console.log(`[create ] ${prettyPath(destination, repo)} from ${prettyPath(source, repo)}`);
@@ -107,14 +114,15 @@ export async function migrate(legacy: LegacyConfig, agentsFlag: AgentId[] | unde
     );
   console.log(`Migrating syncode 1.x setup in ${prettyPath(repo)}\n`);
 
-  restoreLegacyLinks(repo);
-  migrateSkills(repo);
-  migrateInstructions(repo);
-  updateGitignore(repo);
-
   const mapped = legacy.agents.map((id) => RENAMED[id] ?? id);
   const agents = agentsFlag ?? [...new Set(mapped.filter(isAgentId))];
   const dropped = mapped.filter((id) => !isAgentId(id) && id !== "agents");
+
+  restoreLegacyLinks(repo);
+  migrateSkills(repo);
+  migrateInstructions(repo, enabledAgents(agents));
+  updateGitignore(repo);
+
   writeConfig({ version: 2, repo, agents });
   if (dropped.length) console.log(`\nNo longer managed by syncode: ${dropped.join(", ")}.`);
 
