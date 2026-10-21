@@ -1,13 +1,16 @@
-import { Files } from "../files.ts";
+import { Files, type Resolution } from "../files.ts";
 import { git, gitOutput } from "../git.ts";
 import { apply, enabledAgents, unlinkAll } from "../plan.ts";
 import { loadRepo } from "./apply.ts";
 
-export async function pullCommand() {
+export async function pullCommand(options: { onConflict?: Resolution }) {
   const config = loadRepo();
   git(config.repo, ["pull", "--ff-only"]);
   console.log("");
-  await apply(new Files({ repo: config.repo, dryRun: false }), enabledAgents(config.agents));
+  await apply(
+    new Files({ repo: config.repo, dryRun: false, ...options }),
+    enabledAgents(config.agents),
+  );
 }
 
 export function pushCommand(options: { message?: string }) {

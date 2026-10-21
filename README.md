@@ -71,7 +71,7 @@ Any file under an agent's config folder can be adopted into `agents/<id>/`.
 
 ## Conflicts
 
-If a local file differs from the repo copy, `apply` asks whether to keep it, replace it, update the repo from it, or show the diff. It suggests whichever side is newer. Replaced files are backed up to `~/.syncode/backups/`. Outside a terminal (for example over SSH, or when an agent runs syncode), it keeps the local file and reports it.
+If a local file differs from the repo copy, `apply` asks whether to keep it, replace it, update the repo from it, or show the diff. It suggests whichever side is newer. Replaced files are backed up to `~/.syncode/backups/`. Outside a terminal (for example over SSH, or when an agent runs syncode), it keeps the local file and reports it, unless you pass `--on-conflict keep|replace|update` to `apply` or `pull`.
 
 ## Upgrading from 1.x
 
