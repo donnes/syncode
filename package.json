@@ -1,48 +1,43 @@
 {
 	"name": "@donnes/syncode",
 	"version": "1.1.9",
-	"description": "Sync AI code agent configs (Claude Code, Cursor, Windsurf, OpenCode) across machines and projects.",
+	"description": "Sync AI coding agent instructions, skills and configs (Claude Code, Codex, OpenCode, Gemini CLI, Cursor, Copilot) across machines.",
 	"private": false,
 	"type": "module",
 	"bin": {
-		"syncode": "./dist/index.js"
+		"syncode": "./dist/index.mjs"
 	},
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
 	"files": [
 		"dist",
 		"README.md",
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "tsup",
-		"dev": "tsx src/index.ts",
-		"test": "tsx scripts/execute-tests.ts",
-		"prepublishOnly": "npm run build",
-		"check:lint": "biome check . --diagnostic-level=error",
-		"check:unsafe": "biome check . --write --unsafe --diagnostic-level=error",
-		"check:types": "bunx tsc --noEmit"
+		"dev": "node src/index.ts",
+		"build": "tsdown",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check .",
+		"check": "bun run lint && bun run typecheck && bun run test && bun run build",
+		"prepublishOnly": "bun run build"
 	},
 	"keywords": [
 		"ai-agents",
+		"agent-skills",
+		"agents-md",
 		"claude-code",
-		"cursor",
-		"windsurf",
+		"codex",
 		"opencode",
-		"vscode",
-		"ai-coding",
-		"code-agent",
-		"skill-conversion",
-		"syncode",
+		"gemini-cli",
+		"cursor",
+		"copilot",
 		"dotfiles",
-		"configuration-management",
-		"developer-tools",
-		"ai-assistant",
-		"coding-assistant"
+		"syncode"
 	],
 	"engines": {
-		"node": ">=20.0.0"
+		"node": ">=22.12.0"
 	},
+	"packageManager": "bun@1.4.3",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/donnes/syncode.git"
@@ -54,15 +49,13 @@
 	"author": "Donald Silveira",
 	"license": "MIT",
 	"dependencies": {
-		"@clack/prompts": "^0.9.1"
+		"@clack/prompts": "^1.8.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.3.11",
-		"@opencode-ai/sdk": "^1.1.41",
-		"@types/bun": "latest",
-		"@types/node": "^20.0.0",
-		"tsup": "^8.5.1",
-		"tsx": "^4.21.0",
-		"typescript": "^5.7.3"
+		"@biomejs/biome": "^2.6.2",
+		"@types/node": "^22.18.0",
+		"tsdown": "^0.23.1",
+		"typescript": "~7.0.2",
+		"vitest": "^5.0.5"
 	}
 }

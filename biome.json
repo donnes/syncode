@@ -1,34 +1,28 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": [
-			"**",
-			"!!.claude",
-			"!!.opencode",
-			"!!node_modules",
-			"!!.github",
-			"!!dist"
-		]
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"style": {
-				"noNonNullAssertion": "off",
-				"noCommonJs": "error"
-			}
-		}
+		"includes": ["**", "!!dist", "!!.scratch"]
 	},
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "space",
-		"indentWidth": 2
+		"indentWidth": 2,
+		"lineWidth": 100
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"noCommonJs": "error",
+				"noNonNullAssertion": "error"
+			}
+		}
 	},
 	"javascript": {
 		"formatter": {
@@ -37,8 +31,7 @@
 	},
 	"json": {
 		"formatter": {
-			"indentStyle": "tab",
-			"indentWidth": 4
+			"indentStyle": "tab"
 		}
 	},
 	"assist": {

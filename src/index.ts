@@ -1,189 +1,100 @@
 #!/usr/bin/env node
+import { parseArgs } from "node:util";
+import pkg from "../package.json" with { type: "json" };
+import { adoptCommand } from "./commands/adopt.ts";
+import { applyCommand, statusCommand } from "./commands/apply.ts";
+import { pullCommand, pushCommand, unlinkCommand } from "./commands/git.ts";
+import { initCommand } from "./commands/init.ts";
+import { Cancelled, UserError } from "./errors.ts";
+import { checkForUpdates } from "./update-check.ts";
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import * as p from "@clack/prompts";
-import { initCommand } from "./commands/init";
-import { machineCommand } from "./commands/machine";
-import { newCommand } from "./commands/new";
-import { pullCommand } from "./commands/pull";
-import { pushCommand } from "./commands/push";
-import { statusCommand } from "./commands/status";
-import { syncCommand } from "./commands/sync";
-import { unsyncCommand } from "./commands/unsync";
-import { getErrorLogFile, logError } from "./utils/trace";
-import { checkForUpdates } from "./utils/update-check";
+const HELP = `syncode ${pkg.version} - sync AI agent instructions, skills and configs across machines
 
-// Read version from package.json
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJson = JSON.parse(
-  readFileSync(join(dirname(__dirname), "package.json"), "utf-8"),
-);
-const VERSION = packageJson.version;
+Usage: syncode <command> [options]
 
-const commands = {
-  new: newCommand,
-  init: initCommand,
-  machine: machineCommand,
-  sync: syncCommand,
-  unsync: unsyncCommand,
-  status: statusCommand,
-  push: pushCommand,
-  pull: pullCommand,
-};
+Commands:
+  init [repo]       Set up this machine from a git URL or path, or start a new repo
+  apply             Link the repo's instructions, skills and configs into each agent
+  status            Show what apply would change, and uncommitted repo changes
+  adopt <path>...   Move a local config file or skill into the repo and link it back
+  pull              Pull the repo and apply it
+  push              Commit any repo changes and push them
+  unlink            Replace every link with a copy of its file, keeping configs in place
+
+Options:
+  --dry-run         Show what apply or unlink would do without changing anything
+  --json            Print status as JSON
+  --agents <ids>    Agents to manage with init, comma-separated
+  -m, --message     Commit message for push
+  -h, --help        Show this help
+  -v, --version     Show the version
+`;
+
+function parse() {
+  try {
+    return parseArgs({
+      allowPositionals: true,
+      options: {
+        "dry-run": { type: "boolean", default: false },
+        json: { type: "boolean", default: false },
+        agents: { type: "string" },
+        message: { type: "string", short: "m" },
+        help: { type: "boolean", short: "h" },
+        version: { type: "boolean", short: "v" },
+      },
+    });
+  } catch (error) {
+    throw new UserError(
+      `${error instanceof Error ? error.message : String(error)}\nRun \`syncode --help\` for usage.`,
+    );
+  }
+}
 
 async function main() {
-  const args = process.argv.slice(2);
-
-  await checkForUpdates({
-    currentVersion: VERSION,
-    packageName: packageJson.name,
-  });
-
-  // Handle --version flag
-  if (args.includes("--version") || args.includes("-v")) {
-    console.log(`syncode v${VERSION}`);
+  if (process.platform === "win32") throw new UserError("syncode supports macOS and Linux only.");
+  const { values, positionals } = parse();
+  const [command, ...rest] = positionals;
+  if (values.version) {
+    console.log(pkg.version);
+    return;
+  }
+  if (values.help || !command || command === "help") {
+    console.log(HELP);
     return;
   }
 
-  // If a command is passed directly, run it
-  if (args.length > 0) {
-    const cmd = args[0]!;
-
-    if (cmd === "help" || cmd === "--help" || cmd === "-h") {
-      showHelp();
-      return;
-    }
-
-    if (cmd in commands) {
-      await commands[cmd as keyof typeof commands]();
-      return;
-    }
-
-    console.error(`Unknown command: ${cmd}`);
-    showHelp();
-    process.exit(1);
-  }
-
-  // Interactive mode
-  console.clear();
-  console.log(`
-███████╗██╗   ██╗███╗   ██╗ ██████╗ ██████╗ ██████╗ ███████╗
-██╔════╝╚██╗ ██╔╝████╗  ██║██╔════╝██╔═══██╗██╔══██╗██╔════╝
-███████╗ ╚████╔╝ ██╔██╗ ██║██║     ██║   ██║██║  ██║█████╗
-╚════██║  ╚██╔╝  ██║╚██╗██║██║     ██║   ██║██║  ██║██╔══╝
-███████║   ██║   ██║ ╚████║╚██████╗╚██████╔╝██████╔╝███████╗
-╚══════╝   ╚═╝   ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
-`);
-  p.intro("syncode - Agent Configuration Manager");
-
-  const action = await p.select({
-    message: "What would you like to do?",
-    options: [
-      {
-        value: "new",
-        label: "Initialize new agent config repo",
-        hint: "Set up config sync",
-      },
-      {
-        value: "init",
-        label: "Initialize from existing repo",
-        hint: "Connect to a shared repo",
-      },
-      {
-        value: "sync",
-        label: "Sync configs",
-        hint: "Import or export agent configs",
-      },
-      {
-        value: "machine",
-        label: "Machine setup",
-        hint: "Dependencies and setup status",
-      },
-      {
-        value: "unsync",
-        label: "Remove symlinks",
-        hint: "Copy configs back to this machine",
-      },
-      {
-        value: "status",
-        label: "Check status",
-        hint: "Show synced agents",
-      },
-      {
-        value: "push",
-        label: "Push to remote",
-        hint: "Push config changes to git remote",
-      },
-      {
-        value: "pull",
-        label: "Pull from remote",
-        hint: "Pull config changes from git remote",
-      },
-    ],
-  });
-
-  if (p.isCancel(action)) {
-    p.cancel("Cancelled");
-    process.exit(0);
-  }
-
-  p.outro(""); // Close intro before running command
-
-  // Run selected command
-  const cmd = commands[action as keyof typeof commands];
-  if (cmd) {
-    await cmd();
+  checkForUpdates(pkg.name, pkg.version);
+  const dryRun = values["dry-run"];
+  switch (command) {
+    case "init":
+      return initCommand(rest[0], values.agents === undefined ? {} : { agents: values.agents });
+    case "apply":
+      return applyCommand({ dryRun });
+    case "status":
+      return statusCommand({ json: values.json });
+    case "adopt":
+      return adoptCommand(rest);
+    case "pull":
+      return pullCommand();
+    case "push":
+      return pushCommand(values.message === undefined ? {} : { message: values.message });
+    case "unlink":
+      return unlinkCommand({ dryRun });
+    default:
+      throw new UserError(`Unknown command: ${command}. Run \`syncode --help\` for usage.`);
   }
 }
 
-function showHelp() {
-  console.log(`
-syncode - Agent Configuration Manager v${VERSION}
-
-Usage: syncode [command]
-
-Setup Commands:
-  new           Initialize a new agent config repository
-  init          Initialize from an existing agent config repository
-
-Sync Commands:
-  sync          Sync agent configs (import or export)
-  unsync        Remove symlinks and keep local configs
-  status        Show status of synced agents
-  push          Push config changes to git remote
-  pull          Pull config changes from git remote
-
-Machine Commands:
-  machine       Machine setup tools (deps, status)
-
-Other Commands:
-  --version     Show version
-  help          Show this help message
-
-Examples:
-  syncode              # Interactive menu
-  syncode new          # Initialize new agent config repo
-  syncode init         # Initialize from existing repo
-  syncode status       # Show status
-  syncode sync         # Sync agent configs
-  syncode unsync       # Remove symlinks
-  syncode push         # Push changes to remote
-  syncode pull         # Pull changes from remote
-  syncode machine      # Machine setup tools
-
-Quick Start:
-  npx @donnes/syncode new           # Quick setup with npx
-  npm install -g @donnes/syncode    # Or install globally
-  bun install -g @donnes/syncode    # Or using bun
-`);
-}
-
-main().catch((error) => {
-  const logFile = logError(error);
-  console.error("Error:", error.message);
-  console.error(getErrorLogFile(logFile));
+main().catch((error: unknown) => {
+  if (error instanceof Cancelled) process.exit(130);
+  if (error instanceof UserError) {
+    console.error(error.message);
+  } else {
+    console.error(
+      process.env.SYNCODE_DEBUG && error instanceof Error
+        ? error.stack
+        : `Error: ${error instanceof Error ? error.message : String(error)}\nSet SYNCODE_DEBUG=1 for the stack trace.`,
+    );
+  }
   process.exit(1);
 });

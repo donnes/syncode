@@ -2,26 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [main, next]
+    branches: [main]
   pull_request:
-    branches: [main, next]
 
 jobs:
-  typecheck:
-    runs-on: ubuntu-latest
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup
 
-      - name: Lint check
-        run: bun run check:lint
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
 
-      - name: Type check
-        run: bun run check:types
-
-      - name: Build
-        run: bun run build
-
-      - name: Tests
-        run: bun run test
+      - name: Run the bundled CLI under Node
+        run: node dist/index.mjs --version

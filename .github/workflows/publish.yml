@@ -27,7 +27,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       tag: ${{ steps.release.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
@@ -50,13 +50,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.release.outputs.tag }}
 
       - uses: ./.github/actions/setup
 
-      - name: Publish to NPM
+      - name: Publish to npm
         run: bun run scripts/publish.ts
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
