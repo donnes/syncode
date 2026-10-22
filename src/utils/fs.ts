@@ -13,7 +13,7 @@ import {
   unlinkSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { REPO_ROOT } from "./paths";
+import { REPO_ROOT, systemPaths } from "./paths";
 
 export function exists(path: string): boolean {
   return existsSync(path);
@@ -231,8 +231,6 @@ export function getAllSymlinksToRepo(): Array<{
   };
 
   // Check common config locations
-  const { systemPaths } = require("./paths");
-
   checkPath(systemPaths.zshrc);
   checkPath(systemPaths.bashrc);
   checkPath(systemPaths.ssh);

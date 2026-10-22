@@ -13,6 +13,7 @@ import {
 import { getConfig } from "../config/manager";
 import { checkAndMigrateConfig } from "../config/migrations";
 import type { GlobalConfig } from "../config/types";
+import { logError } from "../utils/trace";
 
 export async function syncCommand() {
   p.intro("Sync Agent Configs");
@@ -181,7 +182,6 @@ export async function syncCommand() {
       const errorMsg = error instanceof Error ? error.message : String(error);
       const errorObj =
         error instanceof Error ? error : new Error(String(error));
-      const { logError } = require("../utils/trace");
       logError(errorObj, "sync");
       s.message(`✗ ${adapter.name}: ${errorMsg}`);
       errors.push({ agent: adapter.name, error: errorMsg });

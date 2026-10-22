@@ -12,6 +12,7 @@ import { pushCommand } from "./commands/push";
 import { statusCommand } from "./commands/status";
 import { syncCommand } from "./commands/sync";
 import { unsyncCommand } from "./commands/unsync";
+import { getErrorLogFile, logError } from "./utils/trace";
 import { checkForUpdates } from "./utils/update-check";
 
 // Read version from package.json
@@ -181,8 +182,6 @@ Quick Start:
 }
 
 main().catch((error) => {
-  const { logError, getErrorLogFile } = require("./utils/trace");
-
   const logFile = logError(error);
   console.error("Error:", error.message);
   console.error(getErrorLogFile(logFile));

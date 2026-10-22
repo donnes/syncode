@@ -2,7 +2,7 @@
  * Clawdbot adapter
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import {
   copyDir,
@@ -144,7 +144,7 @@ export class ClawdbotAdapter implements AgentAdapter {
       if (exists(backupPath)) {
         removeDir(backupPath);
       }
-      require("node:fs").renameSync(systemPath, backupPath);
+      renameSync(systemPath, backupPath);
     }
 
     createSymlink(repoPath, systemPath);

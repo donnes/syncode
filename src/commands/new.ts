@@ -15,6 +15,7 @@ import { configExists, getConfig, initConfig } from "../config/manager";
 import { SUPPORTED_AGENTS } from "../config/types";
 import { INSTALL_SH_TEMPLATE } from "../templates";
 import { contractHome, expandHome } from "../utils/paths";
+import { getErrorLogFile, logError } from "../utils/trace";
 
 export async function newCommand() {
   p.intro("Initialize Agent Config Repository");
@@ -74,7 +75,6 @@ export async function newCommand() {
     try {
       mkdirSync(repoPath, { recursive: true });
     } catch (error) {
-      const { logError, getErrorLogFile } = require("../utils/trace");
       const logFile = logError(error);
       p.cancel(
         `Failed to create directory: ${error}\n${getErrorLogFile(logFile)}`,
@@ -331,7 +331,6 @@ syncode push
     s.stop("Repository structure created");
   } catch (error) {
     s.stop("Failed to create repository structure");
-    const { logError, getErrorLogFile } = require("../utils/trace");
     const logFile = logError(error);
     p.cancel(`Error: ${error}\n${getErrorLogFile(logFile)}`);
     return;
@@ -369,7 +368,6 @@ Next steps:
   • Run 'syncode push' to commit and push changes`,
     );
   } catch (error) {
-    const { logError, getErrorLogFile } = require("../utils/trace");
     const logFile = logError(error);
     p.cancel(
       `Failed to create configuration: ${error}\n${getErrorLogFile(logFile)}`,

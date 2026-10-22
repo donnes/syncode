@@ -2,7 +2,7 @@
  * GitHub Copilot adapter
  */
 
-import { unlinkSync } from "node:fs";
+import { renameSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import {
   copyDir,
@@ -134,7 +134,7 @@ export class GithubCopilotAdapter implements AgentAdapter {
             removeDir(backupPath);
           }
         }
-        require("node:fs").renameSync(systemPath, backupPath);
+        renameSync(systemPath, backupPath);
       }
     }
 
