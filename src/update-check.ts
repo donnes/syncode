@@ -53,7 +53,15 @@ function isOutdated(current: string, latest: string): boolean {
  * request timeout, and stays quiet outside interactive terminals.
  */
 export function checkForUpdates(packageName: string, current: string) {
-  if (!canPrompt() || process.env.CI || process.env.SYNCODE_NO_UPDATE_CHECK) return;
+  // Local builds carry package.json's 0.0.0-development placeholder.
+  if (
+    current.includes("-") ||
+    !canPrompt() ||
+    process.env.CI ||
+    process.env.SYNCODE_NO_UPDATE_CHECK
+  ) {
+    return;
+  }
   const cache = readCache();
   if (cache && isOutdated(current, cache.latest)) {
     console.log(

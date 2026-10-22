@@ -13,7 +13,7 @@ on:
           - minor
           - major
       preview:
-        description: "Preview mode (skip release and publish)"
+        description: "Preview: run every check and an npm publish dry run, create nothing"
         required: false
         type: boolean
         default: false
@@ -27,20 +27,20 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       tag: ${{ steps.release.outputs.tag }}
     steps:
+      # Full history, so the latest version tag can be found.
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
 
       - uses: ./.github/actions/setup
 
       - name: Release
         id: release
-        run: bun run scripts/release.ts
+        run: node scripts/release.ts
         env:
           BUMP: ${{ inputs.bump }}
           PREVIEW: ${{ inputs.preview }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ github.token }}
 
   publish:
     needs: release
@@ -57,4 +57,6 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Publish to npm
-        run: bun run scripts/publish.ts
+        run: node scripts/publish.ts
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
