@@ -44,8 +44,9 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "knip": "knip",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run knip && bun run test && bun run build",
-    "prepublishOnly": "bun run build"
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run knip && bun run test && bun run build && bun run check:package",
+    "prepublishOnly": "bun run build",
+    "check:package": "publint --strict && node scripts/check-package.ts"
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1"
@@ -56,6 +57,7 @@
     "oxfmt": "^0.74.0",
     "oxlint": "^1.89.0",
     "oxlint-tsgolint": "^7.0.2004",
+    "publint": "^0.3.25",
     "tsdown": "^0.23.1",
     "typescript": "~7.0.2",
     "vitest": "^5.0.5"

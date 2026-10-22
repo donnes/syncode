@@ -6,7 +6,7 @@ syncode is a TypeScript CLI, published to npm, that links AI coding agents' inst
 
 - Package manager: bun. Runtime: Node >= 22.12 for the published CLI, >= 22.18 to run from source.
 - `bun run dev -- <command>`: run from source with Node's type stripping.
-- `bun run check`: format check (oxfmt), type-aware lint (oxlint), typecheck (`tsc`), unused code (knip), tests (Vitest), build (tsdown). Run before pushing; `bun run format` fixes formatting.
+- `bun run check`: format check (oxfmt), type-aware lint (oxlint), typecheck (`tsc`), unused code (knip), tests (Vitest, against the built bundle), build (tsdown), and a pack-install-run check of the npm package (`check:package`). Run before pushing; `bun run format` fixes formatting.
 
 ## Layout
 
@@ -15,7 +15,7 @@ syncode is a TypeScript CLI, published to npm, that links AI coding agents' inst
 - `src/plan.ts`: works out every link from the repo and enabled agents. `apply`, `status` and `unlink` all use it.
 - `src/files.ts`: all filesystem changes, including conflict handling. Its dry-run mode is what makes `status` an exact preview of `apply`.
 - `src/commands/`: one file per command group; `migrate.ts` upgrades 1.x setups.
-- `tests/`: end-to-end tests that run the real CLI against a sandbox home under `.scratch/`.
+- `tests/`: end-to-end tests that build the bundle once and run it against a sandbox home under `.scratch/`.
 
 ## Conventions
 

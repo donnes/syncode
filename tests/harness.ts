@@ -4,7 +4,10 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cli = path.join(root, "src", "index.ts");
+const cli = path.join(root, "dist", "index.mjs");
+// CI points this at the oldest Node in package.json's engines: the CLI must
+// run there, while Vitest itself runs on a current Node.
+const node = process.env.SYNCODE_TEST_NODE || process.execPath;
 const scratch = path.join(root, ".scratch", "tests");
 
 export interface Sandbox {
@@ -31,7 +34,7 @@ export function sandbox(name: string): Sandbox {
   const run: Sandbox["run"] = (...args) => {
     // Not a TTY, so the CLI never prompts. Only allowlisted variables pass
     // through, so the real agent homes can't leak in.
-    const result = spawnSync(process.execPath, [cli, ...args], {
+    const result = spawnSync(node, [cli, ...args], {
       cwd: home,
       encoding: "utf8",
       env: {

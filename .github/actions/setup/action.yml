@@ -8,8 +8,7 @@ runs:
       with:
         bun-version-file: package.json
 
-    # Tests run the CLI's TypeScript directly, which needs Node >= 22.18.
-    # Node 24 also ships the npm needed for trusted publishing.
+    # Node 24 ships the npm needed for trusted publishing.
     - uses: actions/setup-node@v5
       with:
         node-version: 24
