@@ -6,6 +6,7 @@ import { applyCommand, statusCommand } from "./commands/apply.ts";
 import { pullCommand, pushCommand, unlinkCommand } from "./commands/git.ts";
 import { initCommand } from "./commands/init.ts";
 import { Cancelled, UserError } from "./errors.ts";
+import { RESOLUTIONS, type Resolution } from "./files.ts";
 import { checkForUpdates } from "./update-check.ts";
 
 const HELP = `syncode ${pkg.version} - sync AI agent instructions, skills and configs across machines
@@ -23,6 +24,8 @@ Commands:
 
 Options:
   --dry-run         Show what apply or unlink would do without changing anything
+  --on-conflict <keep|replace|update>
+                    Settle differing local files without asking (apply, pull)
   --json            Print status as JSON
   --agents <ids>    Agents to manage with init, comma-separated
   -m, --message     Commit message for push
@@ -38,6 +41,7 @@ function parse() {
         "dry-run": { type: "boolean", default: false },
         json: { type: "boolean", default: false },
         agents: { type: "string" },
+        "on-conflict": { type: "string" },
         message: { type: "string", short: "m" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
@@ -48,6 +52,16 @@ function parse() {
       `${error instanceof Error ? error.message : String(error)}\nRun \`syncode --help\` for usage.`,
     );
   }
+}
+
+/** Validates `--on-conflict`, shaped to spread into Files options. */
+function parseResolution(value: string | undefined): { onConflict?: Resolution } {
+  if (value === undefined) return {};
+  const resolution = RESOLUTIONS.find((candidate) => candidate === value);
+  if (!resolution) {
+    throw new UserError(`--on-conflict must be one of: ${RESOLUTIONS.join(", ")}.`);
+  }
+  return { onConflict: resolution };
 }
 
 async function main() {
@@ -65,17 +79,18 @@ async function main() {
 
   checkForUpdates(pkg.name, pkg.version);
   const dryRun = values["dry-run"];
+  const onConflict = parseResolution(values["on-conflict"]);
   switch (command) {
     case "init":
       return initCommand(rest[0], values.agents === undefined ? {} : { agents: values.agents });
     case "apply":
-      return applyCommand({ dryRun });
+      return applyCommand({ dryRun, ...onConflict });
     case "status":
       return statusCommand({ json: values.json });
     case "adopt":
       return adoptCommand(rest);
     case "pull":
-      return pullCommand();
+      return pullCommand(onConflict);
     case "push":
       return pushCommand(values.message === undefined ? {} : { message: values.message });
     case "unlink":

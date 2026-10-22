@@ -116,11 +116,18 @@ function gitDiff(source: string, current: string, quiet: boolean) {
   );
 }
 
+/** How to settle a local file that differs from the repo copy. */
+export type Resolution = "keep" | "replace" | "update";
+
+export const RESOLUTIONS: readonly Resolution[] = ["keep", "replace", "update"];
+
 export interface FilesOptions {
   repo: string;
   dryRun: boolean;
   /** Collect entries without printing them, for `--json`. */
   quiet?: boolean;
+  /** Settle every conflict this way instead of asking. */
+  onConflict?: Resolution;
 }
 
 /**
@@ -131,6 +138,7 @@ export class Files {
   readonly repo: string;
   readonly dryRun: boolean;
   readonly quiet: boolean;
+  readonly onConflict: Resolution | undefined;
   readonly entries: Entry[] = [];
   /** Where replaced local copies go, one folder per run. */
   private readonly backupDir = path.join(
@@ -143,6 +151,7 @@ export class Files {
     this.repo = options.repo;
     this.dryRun = options.dryRun;
     this.quiet = options.quiet ?? false;
+    this.onConflict = options.onConflict;
   }
 
   pretty(file: string): string {
@@ -204,23 +213,33 @@ export class Files {
       this.log("differs", destination, detail);
       return;
     }
-    if (!canPrompt()) {
-      this.log("keep", destination, `${detail}; run in a terminal to resolve`);
-      return;
-    }
     // Composed instructions must be changed in their source files instead.
     const canUpdate = !within(source, path.join(this.repo, ".generated"));
+
+    if (this.onConflict) {
+      if (this.onConflict === "update" && !canUpdate) {
+        this.log("keep", destination, `${detail}; edit instructions/ to change it`);
+        return;
+      }
+      this.resolve(this.onConflict, source, destination, current, detail);
+      return;
+    }
+    if (!canPrompt()) {
+      this.log("keep", destination, `${detail}; run in a terminal or pass --on-conflict`);
+      return;
+    }
     p.log.warn(`${this.pretty(destination)} ${detail}`);
     while (true) {
-      const choice = answer(
+      const options: { value: Resolution | "diff"; label: string }[] = [
+        { value: "keep", label: "Keep local copy" },
+        { value: "replace", label: "Replace with repo copy" },
+        ...(canUpdate ? [{ value: "update" as const, label: "Update repo from local copy" }] : []),
+        { value: "diff", label: "Show diff" },
+      ];
+      const choice = answer<Resolution | "diff">(
         await p.select({
           message: `Resolve ${this.pretty(destination)}`,
-          options: [
-            { value: "keep", label: "Keep local copy" },
-            { value: "replace", label: "Replace with repo copy" },
-            ...(canUpdate ? [{ value: "update", label: "Update repo from local copy" }] : []),
-            { value: "diff", label: "Show diff" },
-          ],
+          options,
           initialValue:
             localTime > repoTime && canUpdate
               ? "update"
@@ -233,30 +252,41 @@ export class Files {
         gitDiff(source, current, false);
         continue;
       }
-      if (choice === "update") {
+      this.resolve(choice, source, destination, current, detail);
+      return;
+    }
+  }
+
+  private resolve(
+    choice: Resolution,
+    source: string,
+    destination: string,
+    current: string,
+    detail: string,
+  ) {
+    switch (choice) {
+      case "keep":
+        this.log("keep", destination, detail);
+        return;
+      case "replace": {
+        // Move the destination itself: if it's a link to someone else's file,
+        // that file must stay where it is.
+        const backup = this.backupPath(destination);
+        move(destination, backup);
+        this.log("replace", destination, `(backup in ${this.pretty(backup)})`);
+        break;
+      }
+      case "update":
         fs.rmSync(source, { recursive: true, force: true });
         fs.cpSync(current, source, {
           recursive: true,
           preserveTimestamps: true,
           verbatimSymlinks: true,
         });
-      }
-      if (choice === "keep") {
-        this.log("keep", destination, detail);
-        return;
-      }
-      if (choice === "replace") {
-        // Move the destination itself: if it's a link to someone else's file,
-        // that file must stay where it is.
-        const backup = this.backupPath(destination);
-        move(destination, backup);
-        this.log("replace", destination, `(backup in ${this.pretty(backup)})`);
-      } else {
-        this.log("update", destination);
-      }
-      this.replaceWithLink(source, destination);
-      return;
+        this.log("update", destination, `-> ${this.pretty(source)}`);
+        break;
     }
+    this.replaceWithLink(source, destination);
   }
 
   private backupPath(destination: string): string {

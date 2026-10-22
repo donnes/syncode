@@ -166,6 +166,46 @@ describe("apply", () => {
   });
 });
 
+describe("apply --on-conflict", () => {
+  test("replace backs up local copies, moving a link as a link", () => {
+    const box = sandbox("conflict-replace");
+    box.config(["claude"]);
+    box.write({
+      ".syncode/repo/instructions/AGENTS.md": "shared",
+      ".syncode/repo/agents/claude/settings.json": "repo",
+      ".claude/CLAUDE.md": "local",
+      "dotfiles/settings.json": "mine",
+    });
+    // A stow-style link to a file another tool owns.
+    fs.symlinkSync(
+      path.join(box.home, "dotfiles/settings.json"),
+      path.join(box.home, ".claude/settings.json"),
+    );
+
+    expect(box.run("apply", "--on-conflict", "replace").status).toBe(0);
+    expect(box.link(".claude/CLAUDE.md")).toBe(".syncode/repo/instructions/AGENTS.md");
+    expect(box.link(".claude/settings.json")).toBe(".syncode/repo/agents/claude/settings.json");
+    expect(box.read("dotfiles/settings.json")).toBe("mine");
+
+    const [backup] = fs.readdirSync(path.join(box.home, ".syncode/backups"));
+    expect(box.read(`.syncode/backups/${backup}/.claude/CLAUDE.md`)).toBe("local");
+    expect(box.link(`.syncode/backups/${backup}/.claude/settings.json`)).toBe(
+      "dotfiles/settings.json",
+    );
+  });
+
+  test("update copies the local file into the repo", () => {
+    const box = sandbox("conflict-update");
+    box.config(["codex"]);
+    box.write({ ".syncode/repo/instructions/AGENTS.md": "repo", ".codex/AGENTS.md": "local" });
+
+    expect(box.run("apply", "--on-conflict", "nope").status).toBe(1);
+    expect(box.run("apply", "--on-conflict", "update").status).toBe(0);
+    expect(box.read(".syncode/repo/instructions/AGENTS.md")).toBe("local");
+    expect(box.link(".codex/AGENTS.md")).toBe(".syncode/repo/instructions/AGENTS.md");
+  });
+});
+
 describe("adopt", () => {
   test("moves a config file into the repo and links it back", () => {
     const box = sandbox("adopt-file");

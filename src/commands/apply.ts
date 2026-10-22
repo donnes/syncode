@@ -1,6 +1,6 @@
 import { requireConfig } from "../config.ts";
 import { UserError } from "../errors.ts";
-import { exists, Files } from "../files.ts";
+import { exists, Files, type Resolution } from "../files.ts";
 import { gitOutput } from "../git.ts";
 import { apply, enabledAgents } from "../plan.ts";
 
@@ -14,14 +14,14 @@ export function loadRepo() {
   return config;
 }
 
-export async function applyCommand(options: { dryRun: boolean }) {
+export async function applyCommand(options: { dryRun: boolean; onConflict?: Resolution }) {
   const config = loadRepo();
-  const files = new Files({ repo: config.repo, dryRun: options.dryRun });
+  const files = new Files({ repo: config.repo, ...options });
   await apply(files, enabledAgents(config.agents));
   const kept = files.entries.filter((entry) => entry.action === "keep").length;
   if (kept)
     console.log(
-      `\nKept ${kept} differing local file(s). Run \`syncode apply\` in a terminal to resolve them.`,
+      `\nKept ${kept} differing local file(s). Run \`syncode apply\` in a terminal, or pass --on-conflict, to resolve them.`,
     );
 }
 
