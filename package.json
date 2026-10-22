@@ -1,61 +1,67 @@
 {
-	"name": "@donnes/syncode",
-	"version": "1.1.9",
-	"description": "Sync AI coding agent instructions, skills and configs (Claude Code, Codex, OpenCode, Gemini CLI, Cursor, Copilot) across machines.",
-	"private": false,
-	"type": "module",
-	"bin": {
-		"syncode": "./dist/index.mjs"
-	},
-	"files": [
-		"dist",
-		"README.md",
-		"LICENSE"
-	],
-	"scripts": {
-		"dev": "node src/index.ts",
-		"build": "tsdown",
-		"test": "vitest run",
-		"typecheck": "tsc --noEmit",
-		"lint": "biome check .",
-		"check": "bun run lint && bun run typecheck && bun run test && bun run build",
-		"prepublishOnly": "bun run build"
-	},
-	"keywords": [
-		"ai-agents",
-		"agent-skills",
-		"agents-md",
-		"claude-code",
-		"codex",
-		"opencode",
-		"gemini-cli",
-		"cursor",
-		"copilot",
-		"dotfiles",
-		"syncode"
-	],
-	"engines": {
-		"node": ">=22.12.0"
-	},
-	"packageManager": "bun@1.4.3",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/donnes/syncode.git"
-	},
-	"bugs": {
-		"url": "https://github.com/donnes/syncode/issues"
-	},
-	"homepage": "https://github.com/donnes/syncode#readme",
-	"author": "Donald Silveira",
-	"license": "MIT",
-	"dependencies": {
-		"@clack/prompts": "^1.8.1"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.6.2",
-		"@types/node": "^22.18.0",
-		"tsdown": "^0.23.1",
-		"typescript": "~7.0.2",
-		"vitest": "^5.0.5"
-	}
+  "name": "@donnes/syncode",
+  "version": "1.1.9",
+  "private": false,
+  "description": "Sync AI coding agent instructions, skills and configs (Claude Code, Codex, OpenCode, Gemini CLI, Cursor, Copilot) across machines.",
+  "keywords": [
+    "agent-skills",
+    "agents-md",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "copilot",
+    "cursor",
+    "dotfiles",
+    "gemini-cli",
+    "opencode",
+    "syncode"
+  ],
+  "homepage": "https://github.com/donnes/syncode#readme",
+  "bugs": {
+    "url": "https://github.com/donnes/syncode/issues"
+  },
+  "license": "MIT",
+  "author": "Donald Silveira",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donnes/syncode.git"
+  },
+  "bin": {
+    "syncode": "./dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.ts",
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --type-aware --deny-warnings",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "knip": "knip",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run knip && bun run test && bun run build",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "knip": "^6.42.1",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2004",
+    "tsdown": "^0.23.1",
+    "typescript": "~7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "bun@1.4.3"
 }

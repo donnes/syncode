@@ -7,7 +7,7 @@ import { apply, enabledAgents, repoPaths } from "../plan.ts";
 import { loadRepo } from "./apply.ts";
 
 /** Where an adopted path belongs in the repo. */
-export function adoptTarget(file: string, repo: string, agents: readonly Agent[]): string {
+function adoptTarget(file: string, repo: string, agents: readonly Agent[]): string {
   const paths = repoPaths(repo);
   if (fs.statSync(file).isDirectory() && fs.existsSync(path.join(file, "SKILL.md"))) {
     return path.join(paths.skills, path.basename(file));

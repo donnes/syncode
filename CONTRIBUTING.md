@@ -14,7 +14,8 @@ bun run dev -- --help
 ## Before opening a pull request
 
 ```bash
-bun run check   # lint, typecheck, test, build
+bun run format  # fix formatting
+bun run check   # format check, lint, typecheck, knip, test, build
 ```
 
 [AGENTS.md](AGENTS.md) describes the layout and conventions. To support a new agent, add an entry to `src/agents.ts` and the README table, with a link to the docs showing where it reads instructions and skills.

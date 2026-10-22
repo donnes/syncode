@@ -22,7 +22,7 @@ export type StoredConfig =
   | { kind: "current"; config: Config }
   | { kind: "legacy"; config: LegacyConfig };
 
-export function configFile(): string {
+function configFile(): string {
   return path.join(syncodeDir(), "config.json");
 }
 

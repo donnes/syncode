@@ -12,7 +12,7 @@ import {
 } from "./files.ts";
 import { syncodeDir } from "./paths.ts";
 
-export interface Link {
+interface Link {
   source: string;
   destination: string;
 }
@@ -39,7 +39,7 @@ export function enabledAgents(ids: readonly AgentId[]): Agent[] {
   return ids.flatMap((id) => findAgent(id) ?? []);
 }
 
-export function listSkills(repo: string): string[] {
+function listSkills(repo: string): string[] {
   return children(repoPaths(repo).skills).filter((dir) =>
     fs.existsSync(path.join(dir, "SKILL.md")),
   );
@@ -69,7 +69,7 @@ function instructionsSource(repo: string): Pick<Plan, "generated"> & { source?: 
   return { source: file, generated: { file, content, detail } };
 }
 
-export function plan(repo: string, agents: readonly Agent[]): Plan {
+function plan(repo: string, agents: readonly Agent[]): Plan {
   const links: Link[] = [];
   const { source: instructions, generated } = instructionsSource(repo);
 
